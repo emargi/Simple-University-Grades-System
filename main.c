@@ -85,8 +85,13 @@ void adminMainMenu(User user);
 void headMainMenu(User user);
 void staffMainMenu(User user);
 
+void listUsers(void);
+void listHeads(void);
+void listStaff(void);
+
 void addNewHead(void);
 void addNewStaff(void);
+
 
 // main function
 void main() {
@@ -214,7 +219,10 @@ void adminMainMenu(User user) {
         addNewStaff();
     }
 
-    Sleep(1000);
+    else if (choice == 3) {
+        listUsers();
+    }
+
     mainMenu(user);
 }
 
@@ -224,6 +232,78 @@ void headMainMenu(User user) {
 
 void staffMainMenu(User user) {
     // ...
+}
+
+void listUsers(void) {
+    system("cls");
+
+    printf("[#] List of all available users:\n\n");
+    listHeads();
+    printf("\n");
+    listStaff();
+
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
+void listHeads(void) {
+    struct departmentHead *start, *end;
+    getDepartmentHeads(&start, &end);
+
+    if (start != NULL) {
+        printf("[#] List of department heads:\n");
+    }
+
+    int num = 1;
+    struct departmentHead *curr;
+    curr = start;
+    while (curr != NULL) {
+        char name[50];
+        strcpy(name, curr->firstName);
+        strcat(name, " ");
+        strcat(name, curr->lastName);
+
+        printf("\n[#] Index: %d\n", num);
+        printf("[#] Name: %s\n", name);
+        printf("[#] Join date: %s\n", curr->joinDate);
+        printf("[#] Academic group: %s\n", curr->groupName);
+        printf("[#] Username: %s\n", curr->username);
+        printf("[#] National number: %s\n", curr->nationalNumber);
+        printf("[#] Phone number: %s\n", curr->phoneNumber);
+        printf("[#] Email: %s\n", curr->email);
+
+        curr = curr->next;
+        num++;
+    }
+}
+
+void listStaff(void) {
+    struct academicStaff *start, *end;
+    getAcademicStaff(&start, &end);
+
+    if (start != NULL) {
+        printf("[#] List of academic staff:\n");
+    }
+
+    int num = 1;
+    struct academicStaff *curr = start;
+    while (curr != NULL) {
+        char name[50];
+        strcpy(name, curr->firstName);
+        strcat(name, " ");
+        strcat(name, curr->lastName);
+
+        printf("\n[#] Index: %d\n", num);
+        printf("[#] Name: %s\n", name);
+        printf("[#] Join date: %s\n", curr->joinDate);
+        printf("[#] Rank: %d\n", curr->rank);
+        printf("[#] Username: %s\n", curr->username);
+        printf("[#] Phone number: %s\n", curr->phoneNumber);
+        printf("[#] Email: %s\n", curr->email);
+
+        curr = curr->next;
+        num++;
+    }
 }
 
 void addNewHead() {
@@ -346,6 +426,7 @@ void addNewHead() {
     }
 
     printf("\n[#] New department head successfully added!\n");
+    Sleep(1000);
 }
 
 void addNewStaff(void) {
@@ -455,6 +536,7 @@ void addNewStaff(void) {
     }
 
     printf("\n[#] New academic staff added");
+    Sleep(1000);
 }
 
 void getDepartmentHeads(struct departmentHead **start, struct departmentHead **end) {
