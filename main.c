@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <conio.h>
+#include <windows.h>
 
 // constants
 // characters + '\n' (fgets BUG) + '\0'
@@ -75,6 +76,7 @@ void addNewHead(void);
 // main function
 void main() {
     printf("Welcome to Student Management System\n\n");
+    Sleep(1000);
 
     User user = loginPanel();
     mainMenu(user);
@@ -82,6 +84,7 @@ void main() {
 
 // function definitions
 User loginPanel(void) {
+    system("cls");
     printf("[#] To use this program, you should first login to your account\n");
     int choice = -1;
     do {
@@ -156,6 +159,7 @@ User loginStaff(void) {
 }
 
 void mainMenu(User user) {
+    system("cls");
     if (strcmp(user.type, "admin") == 0)
         adminMainMenu(user);
 
