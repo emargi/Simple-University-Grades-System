@@ -44,6 +44,18 @@ struct departmentHead {
     struct departmentHead *next;
 };
 
+struct academicStaff {
+    char firstName[MAX_NAME_LEN];
+    char lastName[MAX_NAME_LEN];
+    char username[MAX_USERNAME_LEN];
+    char password[MAX_PASSWORD_LEN];
+    char email[MAX_EMAIL_LEN];
+    char phoneNumber[PHONE_NUMBER_LEN];
+    char joinDate[DATE_LEN];
+    int rank;
+    struct academicStaff *next;
+};
+
 // function prototypes
 int inputDigit(void);
 void inputString(char input[], int size);
@@ -60,6 +72,8 @@ void removeNewLine(char str[]);
 
 void getDepartmentHeads(struct departmentHead **start, struct departmentHead **end);
 void setDepartmentHeads(struct departmentHead **start, struct departmentHead **end);
+void getAcademicStaff(struct academicStaff **start, struct academicStaff **end);
+void setAcademicStaff(struct academicStaff **start, struct academicStaff **end);
 
 User loginPanel(void);
 User loginAdmin(void);
@@ -72,11 +86,11 @@ void headMainMenu(User user);
 void staffMainMenu(User user);
 
 void addNewHead(void);
+void addNewStaff(void);
 
 // main function
 void main() {
-    printf("Welcome to Student Management System\n\n");
-    Sleep(1000);
+    printf("Welcome to Student Management System");
 
     User user = loginPanel();
     mainMenu(user);
@@ -84,7 +98,9 @@ void main() {
 
 // function definitions
 User loginPanel(void) {
+    Sleep(1000);
     system("cls");
+
     printf("[#] To use this program, you should first login to your account\n");
     int choice = -1;
     do {
@@ -190,10 +206,15 @@ void adminMainMenu(User user) {
         mainMenu(user);
     }
 
-    if (choice == 1) {
+    else if (choice == 1) {
         addNewHead();
     }
 
+    else if (choice == 2) {
+        addNewStaff();
+    }
+
+    Sleep(1000);
     mainMenu(user);
 }
 
@@ -317,15 +338,123 @@ void addNewHead() {
 
     setDepartmentHeads(&start, &end);
 
-    struct departmentHead *temp;
     curr = start;
     while (curr != NULL) {
-        temp = curr->next;
-        free(curr);
-        curr = temp;
+        curr = start->next;
+        free(start);
+        start = curr;
     }
 
     printf("\n[#] New department head successfully added!\n");
+}
+
+void addNewStaff(void) {
+    int num;
+    printf("[?] Enter the number of academic staff you want to add: ");
+    scanf("%d", &num);
+
+    int i;
+    struct academicStaff *newStaff, *curr, *lastStaff;
+    newStaff = NULL;
+    lastStaff = NULL;
+    for (i = 0; i < num; i++) {
+        curr = malloc(sizeof(struct academicStaff));
+        printf("\n[#] Enter the information of staff #%d:\n", i + 1);
+
+        printf("[?] Enter first name: ");
+        inputString(curr->firstName, MAX_NAME_LEN);
+
+        printf("[?] Enter last name: ");
+        inputString(curr->lastName, MAX_NAME_LEN);
+
+        int correct;
+        char date[DATE_LEN];
+        do {
+            printf("[?] Enter the date of join (sample: 2026/01/01): ");
+            inputString(date, DATE_LEN);
+            correct = validateDate(date);
+            if (!correct)
+                printf("[!] Wrong date. Try again\n");
+        } while (!correct);
+        strcpy(curr->joinDate, date);
+
+        char strNumber[10];
+        printf("[?] Enter rank: ");
+        inputStringNumber(strNumber, 10);
+        curr->rank = atoi(strNumber);
+
+        char phoneNumber[PHONE_NUMBER_LEN];
+        do {
+            printf("[?] Enter phone number (sample: 09123456789): ");
+            inputStringNumber(phoneNumber, PHONE_NUMBER_LEN);
+            correct = validatePhoneNumber(phoneNumber);
+            if (!correct)
+                printf("[!] Wrong phone number format. Try again\n");
+        } while (!correct);
+        strcpy(curr->phoneNumber, phoneNumber);
+
+        char email[MAX_EMAIL_LEN];
+        do {
+            printf("[?] Enter email (sample: test@yahoo.com): ");
+            inputString(email, MAX_EMAIL_LEN);
+            correct = validateEmail(email);
+            if (!correct)
+                printf("[!] Wrong email. Try again\n");
+        } while (!correct);
+        strcpy(curr->email, email);
+
+        printf("[?] Enter username: ");
+        inputUsername(curr->username, MAX_USERNAME_LEN);
+
+        char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
+        do {
+            printf("[?] Enter password: ");
+            inputPassword(password1, MAX_PASSWORD_LEN);
+            printf("[?] Enter password again: ");
+            inputPassword(password2, MAX_PASSWORD_LEN);
+            if (strcmp(password1, password2) != 0) {
+                correct = 0;
+                printf("[!] Passwords do not match. Try again\n");
+            }
+            else {
+                correct = 1;
+            }
+        } while (!correct);
+        strcpy(curr->password, password1);
+
+        curr->next = NULL;
+
+        if (newStaff == NULL) {
+            newStaff = curr;
+            lastStaff = newStaff;
+        }
+        else {
+            lastStaff->next = curr;
+            lastStaff = curr;
+        }
+    }
+
+    struct academicStaff *start, *end;
+    getAcademicStaff(&start, &end);
+    if (start == NULL) {
+        start = newStaff;
+        end = lastStaff;
+    }
+    else {
+        end->next = newStaff;
+        end = lastStaff;
+    }
+
+    setAcademicStaff(&start, &end);
+
+    curr = start;
+    while (curr != NULL) {
+        curr = start->next;
+        free(start);
+        start = curr;
+    }
+
+    printf("\n[#] New academic staff added");
 }
 
 void getDepartmentHeads(struct departmentHead **start, struct departmentHead **end) {
@@ -416,6 +545,96 @@ void setDepartmentHeads(struct departmentHead **start, struct departmentHead **e
         fprintf(fp, "%s\n", curr->phoneNumber);
         fprintf(fp, "%s\n", curr->nationalNumber);
         fprintf(fp, "%s\n", curr->joinDate);
+        curr = curr->next;
+    }
+
+    fclose(fp);
+}
+
+void getAcademicStaff(struct academicStaff **start, struct academicStaff **end) {
+    FILE *fp;
+    fp = fopen(STAFF_PROFILES_FILE, "r");
+    if (fp == NULL) {
+        // maybe file is not created yet
+        // create it, then read it again
+        fp = fopen(STAFF_PROFILES_FILE, "w");
+        fclose(fp);
+        fp = fopen(STAFF_PROFILES_FILE, "r");
+        if (fp == NULL) {
+            printf("[Error] Something went wrong while reading a file.\n");
+            exit(1);
+        }
+    }
+
+    *start = NULL;
+    *end = NULL;
+
+    struct academicStaff *curr;
+    while (!feof(fp)) {
+        curr = malloc(sizeof(struct academicStaff));
+        // BUG: fgets gets '\n' at the end of the line
+        if (fgets(curr->firstName, MAX_NAME_LEN, fp) == NULL) {
+            free(curr);
+            break;
+        }
+        removeNewLine(curr->firstName);
+
+        fgets(curr->lastName, MAX_NAME_LEN, fp);
+        removeNewLine(curr->lastName);
+
+        fgets(curr->username, MAX_USERNAME_LEN, fp);
+        removeNewLine(curr->username);
+
+        fgets(curr->password, MAX_PASSWORD_LEN, fp);
+        removeNewLine(curr->password);
+
+        fgets(curr->email, MAX_EMAIL_LEN, fp);
+        removeNewLine(curr->email);
+
+        fgets(curr->phoneNumber, PHONE_NUMBER_LEN, fp);
+        removeNewLine(curr->phoneNumber);
+
+        fgets(curr->joinDate, DATE_LEN, fp);
+        removeNewLine(curr->joinDate);
+
+        char strNumber[12];
+        fgets(strNumber, 12, fp);
+        removeNewLine(strNumber);
+        curr->rank = atoi(strNumber);
+
+        curr->next = NULL;
+
+        if (*start == NULL) {
+            *start = curr;
+            *end = *start;
+        }
+        else {
+            (*end)->next = curr;
+            *end = curr;
+        }
+    }
+
+    fclose(fp);
+}
+
+void setAcademicStaff(struct academicStaff **start, struct academicStaff **end) {
+    FILE *fp;
+    fp = fopen(STAFF_PROFILES_FILE, "w");
+    if (fp == NULL) {
+        printf("[Error] Something went wrong while opening a file");
+        exit(1);
+    }
+
+    struct academicStaff *curr = *start;
+    while (curr != NULL) {
+        fprintf(fp, "%s\n", curr->firstName);
+        fprintf(fp, "%s\n", curr->lastName);
+        fprintf(fp, "%s\n", curr->username);
+        fprintf(fp, "%s\n", curr->password);
+        fprintf(fp, "%s\n", curr->email);
+        fprintf(fp, "%s\n", curr->phoneNumber);
+        fprintf(fp, "%s\n", curr->joinDate);
+        fprintf(fp, "%d\n", curr->rank);
         curr = curr->next;
     }
 
