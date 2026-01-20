@@ -16,9 +16,11 @@
 #define NATIONAL_NUMBER_LEN 12
 #define DATE_LEN 12
 #define STATUS_LEN 10
+#define LESSON_CODE_LEN 7
 
 #define HEAD_PROFILES_FILE "department_head_profiles.txt"
 #define STAFF_PROFILES_FILE "academic_staff_profiles.txt"
+#define LESSONS_FILE "lessons.txt"
 
 const char USERNAME_CHARS[] = "abcdefghijklmnopqrstuvwxyz1234567890_";
 
@@ -59,6 +61,15 @@ struct academicStaff {
     struct academicStaff *next;
 };
 
+struct lesson {
+    char name[MAX_NAME_LEN];
+    char type[MAX_NAME_LEN];
+    char code[MAX_NAME_LEN];
+    char status[STATUS_LEN];
+    int units;
+    struct lesson *next;
+};
+
 // function prototypes
 int inputDigit(void);
 void inputString(char input[], int size);
@@ -79,6 +90,11 @@ void freeDepartmentHeads(struct departmentHead *start, struct departmentHead *en
 void getAcademicStaff(struct academicStaff **start, struct academicStaff **end);
 void setAcademicStaff(struct academicStaff **start, struct academicStaff **end);
 void freeAcademicStaff(struct academicStaff *start, struct academicStaff *end);
+void getLessons(struct lesson **start, struct lesson **end);
+void setLessons(struct lesson *start, struct lesson *end);
+void freeLessons(struct lesson *start, struct lesson *end);
+struct departmentHead *getHeadByUsername(struct departmentHead *start, struct departmentHead *end, char username[]);
+struct academicStaff *getStaffByUsername(struct academicStaff *start, struct academicStaff *end, char username[]);
 
 User loginPanel(void);
 User loginAdmin(void);
@@ -96,6 +112,7 @@ void listStaff(void);
 
 void addNewHead(void);
 void addNewStaff(void);
+void addNewLesson(void);
 void createBackup(void);
 void useBackup(void);
 
@@ -180,12 +197,76 @@ User loginAdmin(void) {
 }
 
 User loginHead(void) {
+    struct departmentHead *start, *end, *user;
+    getDepartmentHeads(&start, &end);
+
+    int correct;
+    do {
+        char username[MAX_USERNAME_LEN];
+        printf("[?] Enter username: ");
+        inputUsername(username, MAX_USERNAME_LEN);
+
+        char password[MAX_PASSWORD_LEN];
+        printf("[?] Enter password: ");
+        inputPassword(password, MAX_PASSWORD_LEN);
+
+        user = getHeadByUsername(start, end, username);
+        if (user != NULL) {
+            if (strcmp(user->password, password) != 0)
+                correct = 0;
+            else
+                correct = 1;
+        }
+        else {
+            correct = 0;
+        }
+
+        if (!correct)
+            printf("[!] Wrong information. Try again\n\n");
+    } while (!correct);
+
     User u;
+    strcpy(u.type, "head");
+    strcpy(u.username, user->username);
+
+    freeDepartmentHeads(start, end);
     return u;
 }
 
 User loginStaff(void) {
+    struct academicStaff *start, *end, *user;
+    getAcademicStaff(&start, &end);
+
+    int correct;
+    do {
+        char username[MAX_USERNAME_LEN];
+        printf("[?] Enter username: ");
+        inputUsername(username, MAX_USERNAME_LEN);
+
+        char password[MAX_PASSWORD_LEN];
+        printf("[?] Enter password: ");
+        inputPassword(password, MAX_PASSWORD_LEN);
+
+        user = getStaffByUsername(start, end, username);
+        if (user != NULL) {
+            if (strcmp(user->password, password) != 0)
+                correct = 0;
+            else
+                correct = 1;
+        }
+        else {
+            correct = 0;
+        }
+
+        if (!correct)
+            printf("[!] Wrong information. Try again\n\n");
+    } while (!correct);
+
     User u;
+    strcpy(u.type, "staff");
+    strcpy(u.username, user->username);
+
+    freeAcademicStaff(start, end);
     return u;
 }
 
@@ -254,7 +335,19 @@ void adminMainMenu(User user) {
 }
 
 void headMainMenu(User user) {
-    // ...
+    system("cls");
+    printf("[#] The available actions are listed below:\n\n");
+    printf("1. Add new lesson\n2. Add new grade\n3. Edit lesson");
+    printf("\n4. Edit grade\n5. Delete lesson\n6. Log");
+    printf("\n7. Account settings\n\n0. Log out\n");
+
+    printf("\n[?] Enter your choice (enter number): ");
+    int digit = inputDigit();
+
+    if (digit == 1)
+        addNewLesson();
+
+    headMainMenu(user);
 }
 
 void staffMainMenu(User user) {
@@ -568,6 +661,65 @@ void addNewStaff(void) {
     Sleep(1000);
 }
 
+void addNewLesson(void) {
+    int num;
+    printf("\n[?] How many lessons do you want to add (enter number): ");
+    scanf("%d", &num);
+
+    struct lesson *start, *curr, *end;
+    start = NULL;
+    end = NULL;
+
+    int i;
+    for (i = 0; i < num; i++) {
+        curr = malloc(sizeof(struct lesson));
+        printf("[#] Enter the information of lesson #%d:\n", i + 1);
+
+        printf("[?] Enter name: ");
+        inputString(curr->name, MAX_NAME_LEN);
+
+        char strNumber[5];
+        printf("[?] Enter units: ");
+        inputStringNumber(strNumber, 5);
+        curr->units = atoi(strNumber);
+
+        printf("[?] Enter type: ");
+        inputString(curr->type, MAX_NAME_LEN);
+
+        printf("[?] Enter code: ");
+        inputStringNumber(curr->code, LESSON_CODE_LEN);
+
+        strcpy(curr->status, "enabled");
+        curr->next = NULL;
+
+        if (start == NULL) {
+            start = curr;
+            end = start;
+        }
+        else {
+            end->next = curr;
+            end = curr;
+        }
+    }
+
+    struct lesson *first, *last;
+    getLessons(&first, &last);
+    if (first == NULL) {
+        first = start;
+        last = end;
+    }
+    else {
+        last->next = start;
+        last = end;
+    }
+
+    setLessons(first, last);
+    freeLessons(first, last);
+
+    printf("[#] Lessons added");
+    Sleep(1000);
+}
+
 void deleteUser(void) {
     char username[MAX_USERNAME_LEN];
     printf("[?] Enter username (Enter 0 to ccancel): ");
@@ -831,6 +983,24 @@ void setDepartmentHeads(struct departmentHead **start, struct departmentHead **e
     fclose(fp);
 }
 
+struct departmentHead *getHeadByUsername(struct departmentHead *start, struct departmentHead *end, char username[]) {
+    struct departmentHead *curr;
+    curr = start;
+    while (curr != NULL) {
+        if (strcmp(curr->status, "deleted") == 0) {
+            curr = curr->next;
+            continue;
+        }
+
+        if (strcmp(curr->username, username) == 0)
+            break;
+
+        curr = curr->next;
+    }
+
+    return curr;
+}
+
 void freeDepartmentHeads(struct departmentHead *start, struct departmentHead *end) {
     end = start;
     while (end != NULL) {
@@ -934,7 +1104,107 @@ void setAcademicStaff(struct academicStaff **start, struct academicStaff **end) 
     fclose(fp);
 }
 
+struct academicStaff *getStaffByUsername(struct academicStaff *start, struct academicStaff *end, char username[]) {
+    struct academicStaff *curr;
+    curr = start;
+    while (curr != NULL) {
+        if (strcmp(curr->status, "deleted") == 0) {
+            curr = curr->next;
+            continue;
+        }
+
+        if (strcmp(curr->username, username) == 0)
+            break;
+
+        curr = curr->next;
+    }
+
+    return curr;
+}
+
 void freeAcademicStaff(struct academicStaff *start, struct academicStaff *end) {
+    end = start;
+    while (end != NULL) {
+        end = start->next;
+        free(start);
+        start = end;
+    }
+}
+
+void getLessons(struct lesson **start, struct lesson **end) {
+    FILE *fp;
+    fp = fopen(LESSONS_FILE, "r");
+    if (fp == NULL) {
+        fp = fopen(LESSONS_FILE, "w");
+        fclose(fp);
+        fp = fopen(LESSONS_FILE, "r");
+        if (fp == NULL) {
+            printf("[Error] Something went wrong while reading a file");
+            exit(1);
+        }
+    }
+
+    *start = NULL;
+    *end = NULL;
+    struct lesson *curr;
+    while (!feof(fp)) {
+        curr = malloc(sizeof(struct lesson));
+        if (fgets(curr->name, MAX_NAME_LEN, fp) == NULL) {
+            free(curr);
+            break;
+        }
+        removeNewLine(curr->name);
+
+        fgets(curr->type, MAX_NAME_LEN, fp);
+        removeNewLine(curr->type);
+
+        fgets(curr->code, LESSON_CODE_LEN, fp);
+        removeNewLine(curr->code);
+
+        char strNumber[5];
+        fgets(strNumber, 5, fp);
+        removeNewLine(strNumber);
+        curr->units = atoi(strNumber);
+
+        fgets(curr->status, STATUS_LEN, fp);
+        removeNewLine(curr->status);
+
+        if (*start == NULL) {
+            *start = curr;
+            *end = *start;
+        }
+        else {
+            (*end)->next = curr;
+            *end = curr;
+        }
+    }
+
+    fclose(fp);
+}
+
+void setLessons(struct lesson *start, struct lesson *end) {
+    FILE *fp;
+    fp = fopen(LESSONS_FILE, "w");
+    if (fp == NULL) {
+        printf("[Error] Something went wrong while write to afile");
+        exit(1);
+    }
+
+    struct lesson *curr;
+    curr = start;
+    while (curr != NULL) {
+        fprintf(fp, "%s\n", curr->name);
+        fprintf(fp, "%s\n", curr->type);
+        fprintf(fp, "%s\n", curr->code);
+        fprintf(fp, "%d\n", curr->units);
+        fprintf(fp, "%s\n", curr->status);
+        curr = curr->next;
+    }
+
+    fclose(fp);
+}
+
+void freeLessons(struct lesson *start, struct lesson *end) {
     end = start;
     while (end != NULL) {
         end = start->next;
