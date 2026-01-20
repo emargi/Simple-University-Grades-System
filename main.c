@@ -15,6 +15,7 @@
 #define PHONE_NUMBER_LEN 13
 #define NATIONAL_NUMBER_LEN 12
 #define DATE_LEN 12
+#define STATUS_LEN 10
 
 #define HEAD_PROFILES_FILE "department_head_profiles.txt"
 #define STAFF_PROFILES_FILE "academic_staff_profiles.txt"
@@ -41,6 +42,7 @@ struct departmentHead {
     char phoneNumber[PHONE_NUMBER_LEN];
     char nationalNumber[NATIONAL_NUMBER_LEN];
     char joinDate[DATE_LEN]; // xxxx/xx/xx
+    char status[STATUS_LEN];
     struct departmentHead *next;
 };
 
@@ -52,6 +54,7 @@ struct academicStaff {
     char email[MAX_EMAIL_LEN];
     char phoneNumber[PHONE_NUMBER_LEN];
     char joinDate[DATE_LEN];
+    char status[STATUS_LEN];
     int rank;
     struct academicStaff *next;
 };
@@ -72,8 +75,10 @@ void removeNewLine(char str[]);
 
 void getDepartmentHeads(struct departmentHead **start, struct departmentHead **end);
 void setDepartmentHeads(struct departmentHead **start, struct departmentHead **end);
+void freeDepartmentHeads(struct departmentHead *start, struct departmentHead *end);
 void getAcademicStaff(struct academicStaff **start, struct academicStaff **end);
 void setAcademicStaff(struct academicStaff **start, struct academicStaff **end);
+void freeAcademicStaff(struct academicStaff *start, struct academicStaff *end);
 
 User loginPanel(void);
 User loginAdmin(void);
@@ -91,7 +96,12 @@ void listStaff(void);
 
 void addNewHead(void);
 void addNewStaff(void);
+void createBackup(void);
+void useBackup(void);
 
+void deleteUser(void);
+int deleteHead(char username[]);
+int deleteStaff(char username[]);
 
 // main function
 void main() {
@@ -196,7 +206,8 @@ void adminMainMenu(User user) {
     do {
         printf("[#] The available actions are listed below:\n");
         printf("\n1. Add new department head\n2. Add new academic staff");
-        printf("\n3. List users\n4. Delete user\n5. Log\n6. Backup\n\n0. Log out");
+        printf("\n3. List users\n4. Delete user\n5. Log\n6. Create backup");
+        printf("\n7. Use backup\n\n0. Log out");
         printf("\n\n[?] Enter your choice (enter number): ");
 
         choice = inputDigit();
@@ -221,6 +232,22 @@ void adminMainMenu(User user) {
 
     else if (choice == 3) {
         listUsers();
+    }
+
+    else if (choice == 4) {
+        deleteUser();
+    }
+
+    else if (choice == 5) {
+        // ...
+    }
+
+    else if (choice == 6) {
+        createBackup();
+    }
+
+    else if (choice == 7) {
+        useBackup();
     }
 
     mainMenu(user);
@@ -258,6 +285,11 @@ void listHeads(void) {
     struct departmentHead *curr;
     curr = start;
     while (curr != NULL) {
+        if (strcmp(curr->status, "deleted") == 0) {
+            curr = curr->next;
+            continue;
+        }
+
         char name[50];
         strcpy(name, curr->firstName);
         strcat(name, " ");
@@ -288,6 +320,11 @@ void listStaff(void) {
     int num = 1;
     struct academicStaff *curr = start;
     while (curr != NULL) {
+        if (strcmp(curr->status, "deleted") == 0) {
+            curr = curr->next;
+            continue;
+        }
+
         char name[50];
         strcpy(name, curr->firstName);
         strcat(name, " ");
@@ -394,6 +431,8 @@ void addNewHead() {
         } while (same == 0);
         strcpy(curr->password, password1);
 
+        strcpy(curr->status, "enabled");
+
         curr->next = NULL;
         if (lastHead == NULL) {
             newHead = curr;
@@ -417,13 +456,7 @@ void addNewHead() {
     }
 
     setDepartmentHeads(&start, &end);
-
-    curr = start;
-    while (curr != NULL) {
-        curr = start->next;
-        free(start);
-        start = curr;
-    }
+    freeDepartmentHeads(start, end);
 
     printf("\n[#] New department head successfully added!\n");
     Sleep(1000);
@@ -433,7 +466,7 @@ void addNewStaff(void) {
     int num;
     printf("[?] Enter the number of academic staff you want to add: ");
     scanf("%d", &num);
-
+    
     int i;
     struct academicStaff *newStaff, *curr, *lastStaff;
     newStaff = NULL;
@@ -441,13 +474,13 @@ void addNewStaff(void) {
     for (i = 0; i < num; i++) {
         curr = malloc(sizeof(struct academicStaff));
         printf("\n[#] Enter the information of staff #%d:\n", i + 1);
-
+        
         printf("[?] Enter first name: ");
         inputString(curr->firstName, MAX_NAME_LEN);
-
+        
         printf("[?] Enter last name: ");
         inputString(curr->lastName, MAX_NAME_LEN);
-
+        
         int correct;
         char date[DATE_LEN];
         do {
@@ -455,38 +488,38 @@ void addNewStaff(void) {
             inputString(date, DATE_LEN);
             correct = validateDate(date);
             if (!correct)
-                printf("[!] Wrong date. Try again\n");
+            printf("[!] Wrong date. Try again\n");
         } while (!correct);
         strcpy(curr->joinDate, date);
-
+        
         char strNumber[10];
         printf("[?] Enter rank: ");
         inputStringNumber(strNumber, 10);
         curr->rank = atoi(strNumber);
-
+        
         char phoneNumber[PHONE_NUMBER_LEN];
         do {
             printf("[?] Enter phone number (sample: 09123456789): ");
             inputStringNumber(phoneNumber, PHONE_NUMBER_LEN);
             correct = validatePhoneNumber(phoneNumber);
             if (!correct)
-                printf("[!] Wrong phone number format. Try again\n");
+            printf("[!] Wrong phone number format. Try again\n");
         } while (!correct);
         strcpy(curr->phoneNumber, phoneNumber);
-
+        
         char email[MAX_EMAIL_LEN];
         do {
             printf("[?] Enter email (sample: test@yahoo.com): ");
             inputString(email, MAX_EMAIL_LEN);
             correct = validateEmail(email);
             if (!correct)
-                printf("[!] Wrong email. Try again\n");
+            printf("[!] Wrong email. Try again\n");
         } while (!correct);
         strcpy(curr->email, email);
-
+        
         printf("[?] Enter username: ");
         inputUsername(curr->username, MAX_USERNAME_LEN);
-
+        
         char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
         do {
             printf("[?] Enter password: ");
@@ -502,9 +535,11 @@ void addNewStaff(void) {
             }
         } while (!correct);
         strcpy(curr->password, password1);
-
+        
+        strcpy(curr->status, "enabled");
+        
         curr->next = NULL;
-
+        
         if (newStaff == NULL) {
             newStaff = curr;
             lastStaff = newStaff;
@@ -514,7 +549,7 @@ void addNewStaff(void) {
             lastStaff = curr;
         }
     }
-
+    
     struct academicStaff *start, *end;
     getAcademicStaff(&start, &end);
     if (start == NULL) {
@@ -525,18 +560,177 @@ void addNewStaff(void) {
         end->next = newStaff;
         end = lastStaff;
     }
-
+    
     setAcademicStaff(&start, &end);
-
-    curr = start;
-    while (curr != NULL) {
-        curr = start->next;
-        free(start);
-        start = curr;
-    }
-
+    freeAcademicStaff(start, end);
+    
     printf("\n[#] New academic staff added");
     Sleep(1000);
+}
+
+void deleteUser(void) {
+    char username[MAX_USERNAME_LEN];
+    printf("[?] Enter username (Enter 0 to ccancel): ");
+    inputString(username, MAX_USERNAME_LEN);
+
+    if (strcmp(username, "0") != 0) {
+        int res = deleteHead(username);
+        if (!res) {
+            res = deleteStaff(username);
+        }
+
+        if (!res) {
+            printf("[!] User not found");
+            Sleep(1000);
+        }
+    }
+}
+
+int deleteHead(char username[]) {
+    struct departmentHead *start, *curr, *end;
+    getDepartmentHeads(&start, &end);
+    curr = start;
+    while (curr != NULL) {
+        if (strcmp(curr->status, "deleted") == 0) {
+            curr = curr->next;
+            continue;
+        }
+        
+        if (strcmp(curr->username, username) == 0)
+            break;
+
+        curr = curr->next;
+    }
+
+    if (curr == NULL)
+        return 0;
+
+    printf("[#] User found: Department Head, %s %s\n", curr->firstName, curr->lastName);
+    printf("[??] Do you want to delete this user (yes/no): ");
+    char answer[5];
+    inputString(answer, 5);
+    if (strcmp(answer, "yes") != 0) {
+        freeDepartmentHeads(start, end);
+        printf("[!] Operation canceled");
+        return 1;
+    }
+
+    strcpy(curr->status, "deleted");
+    setDepartmentHeads(&start, &end);
+    freeDepartmentHeads(start, end);
+
+    printf("[#] User deleted");
+    return 1;
+}
+
+int deleteStaff(char username[]) {
+    struct academicStaff *start, *curr, *end;
+    getAcademicStaff(&start, &end);
+    curr = start;
+    while (curr != NULL) {
+        if (strcmp(curr->status, "deleted") == 0) {
+            curr = curr->next;
+            continue;
+        }
+
+        if (strcmp(curr->username, username) == 0)
+            break;
+
+        curr = curr->next;
+    }
+
+    if (curr == NULL) {
+        freeAcademicStaff(start, end);
+        return 0;
+    }
+
+    printf("[#] User found: Academic staff, %s %s\n", curr->firstName, curr->lastName);
+    printf("[??] Do you want to delete this user (yes/no): ");
+    char answer[5];
+    inputString(answer, 5);
+
+    if (strcmp(answer, "yes") != 0) {
+        freeAcademicStaff(start, end);
+        printf("[!] Operation canceled");
+        return 0;
+    }
+
+    strcpy(curr->status, "deleted");
+    setAcademicStaff(&start, &end);
+    freeAcademicStaff(start, end);
+
+    printf("[#] User deleted");
+    return 1;
+}
+
+void createBackup(void) {
+    char path[110];
+    printf("[?] Enter destination path (sample: D:\\backups): ");
+    inputString(path, 110);
+
+    char dest[150];
+    strcpy(dest, path);
+    strcat(dest, "\\");
+    strcat(dest, HEAD_PROFILES_FILE);
+
+    FILE *fd;
+    fd = fopen(dest, "w");
+    if (fd == NULL) {
+        printf("[!] Wrong path");
+        Sleep(1000);
+    }
+    else {
+        FILE *fs;
+        fs = fopen(HEAD_PROFILES_FILE, "r");
+        if (fs == NULL) {
+            printf("[Error] Something went wrong");
+            fclose(fd);
+            exit(1);
+        }
+
+        char ch = fgetc(fs);
+        while (ch != EOF) {
+            fputc(ch, fd);
+            ch = fgetc(fs);
+        }
+
+        fclose(fs);
+        fclose(fd);
+        printf("[#] Department head information: backup done\n");
+    }
+
+    strcpy(dest, path);
+    strcat(dest, "\\");
+    strcat(dest, STAFF_PROFILES_FILE);
+
+    fd = fopen(dest, "w");
+    if (fd == NULL) {
+        printf("[!] Wrong path");
+        Sleep(1000);
+    }
+    else {
+        FILE *fs;
+        fs = fopen(STAFF_PROFILES_FILE, "r");
+        if (fs == NULL) {
+            printf("[Error] Something went wrong");
+            fclose(fd);
+            exit(1);
+        }
+
+        char ch = fgetc(fs);
+        while (ch != EOF) {
+            fputc(ch, fd);
+            ch = fgetc(fs);
+        }
+
+        fclose(fd);
+        fclose(fs);
+        printf("[#] Academic staff information: backup done");
+    }
+}
+
+void useBackup(void) {
+    // ...
 }
 
 void getDepartmentHeads(struct departmentHead **start, struct departmentHead **end) {
@@ -593,6 +787,9 @@ void getDepartmentHeads(struct departmentHead **start, struct departmentHead **e
         fgets(curr->joinDate, DATE_LEN, fp);
         removeNewLine(curr->joinDate);
 
+        fgets(curr->status, STATUS_LEN, fp);
+        removeNewLine(curr->status);
+
         curr->next = NULL;
 
         if (*start == NULL) {
@@ -627,10 +824,20 @@ void setDepartmentHeads(struct departmentHead **start, struct departmentHead **e
         fprintf(fp, "%s\n", curr->phoneNumber);
         fprintf(fp, "%s\n", curr->nationalNumber);
         fprintf(fp, "%s\n", curr->joinDate);
+        fprintf(fp, "%s\n", curr->status);
         curr = curr->next;
     }
 
     fclose(fp);
+}
+
+void freeDepartmentHeads(struct departmentHead *start, struct departmentHead *end) {
+    end = start;
+    while (end != NULL) {
+        end = start->next;
+        free(start);
+        start = end;
+    }
 }
 
 void getAcademicStaff(struct academicStaff **start, struct academicStaff **end) {
@@ -679,6 +886,9 @@ void getAcademicStaff(struct academicStaff **start, struct academicStaff **end) 
         fgets(curr->joinDate, DATE_LEN, fp);
         removeNewLine(curr->joinDate);
 
+        fgets(curr->status, STATUS_LEN, fp);
+        removeNewLine(curr->status);
+
         char strNumber[12];
         fgets(strNumber, 12, fp);
         removeNewLine(strNumber);
@@ -716,11 +926,21 @@ void setAcademicStaff(struct academicStaff **start, struct academicStaff **end) 
         fprintf(fp, "%s\n", curr->email);
         fprintf(fp, "%s\n", curr->phoneNumber);
         fprintf(fp, "%s\n", curr->joinDate);
+        fprintf(fp, "%s\n", curr->status);
         fprintf(fp, "%d\n", curr->rank);
         curr = curr->next;
     }
 
     fclose(fp);
+}
+
+void freeAcademicStaff(struct academicStaff *start, struct academicStaff *end) {
+    end = start;
+    while (end != NULL) {
+        end = start->next;
+        free(start);
+        start = end;
+    }
 }
 
 int inputDigit(void) {
