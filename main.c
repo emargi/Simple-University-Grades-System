@@ -141,6 +141,7 @@ void useBackup(void);
 void deleteUser(void);
 int deleteHead(char username[]);
 int deleteStaff(char username[]);
+void deleteLesson(void);
 
 // main function
 void main() {
@@ -377,6 +378,9 @@ void headMainMenu(User user) {
 
     else if (digit == 4)
         editGrade();
+
+    else if (digit == 5)
+        deleteLesson();
 
     else if (digit == 7)
         editHead(user);
@@ -1051,6 +1055,39 @@ int deleteStaff(char username[]) {
 
     printf("[#] User deleted");
     return 1;
+}
+
+void deleteLesson(void) {
+    char lessonCode[LESSON_CODE_LEN];
+    printf("[?] Enter lesson code: ");
+    inputStringNumber(lessonCode, LESSON_CODE_LEN);
+
+    struct lesson *start, *end, *curr;
+    getLessons(&start, &end);
+    curr = getLessonByLessonCode(start, end, lessonCode);
+    if (curr == NULL) {
+        printf("[!] Lesson not found");
+        Sleep(1000);
+    }
+    else {
+        printf("[#] Lesson found: %s - %s\n", curr->type, curr->name);
+        char answer[5];
+        printf("[?] Do you want to delete it (yes/no): ");
+        inputString(answer, 5);
+
+        if (strcmp(answer, "yes") == 0) {
+            strcpy(curr->status, "deleted");
+            setLessons(start, end);
+            printf("[#] Lesson deleted");
+            Sleep(1000);
+        }
+        else {
+            printf("[#] Operation canceled");
+            Sleep(1000);
+        }
+    }
+
+    freeLessons(start, end);
 }
 
 void createBackup(void) {
