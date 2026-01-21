@@ -112,6 +112,7 @@ void freeGrades(struct grade *start, struct grade *end);
 struct departmentHead *getHeadByUsername(struct departmentHead *start, struct departmentHead *end, char username[]);
 struct academicStaff *getStaffByUsername(struct academicStaff *start, struct academicStaff *end, char username[]);
 struct lesson *getLessonByLessonCode(struct lesson *start, struct lesson *end, char lessonCode[]);
+struct grade *getGradeByLessonCodeAndStudentNumber(struct grade *start, struct grade *end, char lessonCode[], char studentNumber[]);
 
 User loginPanel(void);
 User loginAdmin(void);
@@ -132,6 +133,7 @@ void addNewStaff(void);
 void addNewLesson(void);
 void addNewGrade(User user);
 void editLesson(void);
+void editGrade(void);
 void createBackup(void);
 void useBackup(void);
 
@@ -371,6 +373,9 @@ void headMainMenu(User user) {
 
     else if (digit == 3)
         editLesson();
+
+    else if (digit == 4)
+        editGrade();
 
     headMainMenu(user);
 }
@@ -847,6 +852,36 @@ void editLesson(void) {
         }
     }
     freeLessons(start, end);
+}
+
+void editGrade(void) {
+    char studentNumber[STUDENT_NUMBER_LEN];
+    printf("[?] Enter student number: ");
+    inputStringNumber(studentNumber, STUDENT_NUMBER_LEN);
+
+    char lessonCode[LESSON_CODE_LEN];
+    printf("[?] Enter lesson code: ");
+    inputStringNumber(lessonCode, LESSON_CODE_LEN);
+
+    struct grade *start, *end, *curr;
+    getGrades(&start, &end);
+    curr = getGradeByLessonCodeAndStudentNumber(start, end, lessonCode, studentNumber);
+    if (curr == NULL) {
+        printf("[!] Grade not found");
+        Sleep(1000);
+    }
+    else {
+        printf("[#] Grade found: %.2f\n", curr->grade);
+        char strNumber[10];
+        printf("[?] Enter new grade: ");
+        inputStringFloat(strNumber, 10);
+        curr->grade = atof(strNumber);
+        setGrades(start, end);
+        printf("[#] Grade changed");
+        Sleep(1000);
+    }
+
+    freeGrades(start, end);
 }
 
 void deleteUser(void) {
@@ -1436,6 +1471,24 @@ void setGrades(struct grade *start, struct grade *end) {
     }
 
     fclose(fp);
+}
+
+struct grade *getGradeByLessonCodeAndStudentNumber(struct grade *start, struct grade *end, char lessonCode[], char studentNumber[]) {
+    struct grade *curr;
+    curr = start;
+    while (curr != NULL) {
+        if (strcmp(curr->lessonCode, lessonCode) != 0) {
+            curr = curr->next;
+            continue;
+        }
+
+        if (strcmp(curr->studentNumber, studentNumber) == 0)
+            break;
+
+        curr = curr->next;
+    }
+
+    return curr;
 }
 
 void freeGrades(struct grade *start, struct grade *end) {
