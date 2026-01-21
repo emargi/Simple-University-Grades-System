@@ -134,6 +134,7 @@ void addNewLesson(void);
 void addNewGrade(User user);
 void editLesson(void);
 void editGrade(void);
+void editHead(User user);
 void createBackup(void);
 void useBackup(void);
 
@@ -376,6 +377,9 @@ void headMainMenu(User user) {
 
     else if (digit == 4)
         editGrade();
+
+    else if (digit == 7)
+        editHead(user);
 
     headMainMenu(user);
 }
@@ -882,6 +886,76 @@ void editGrade(void) {
     }
 
     freeGrades(start, end);
+}
+
+void editHead(User user) {
+    struct departmentHead *start, *end, *head;
+    getDepartmentHeads(&start, &end);
+    head = getHeadByUsername(start, end, user.username);
+    if (head == NULL) {
+        printf("[Error] Something went wrong.");
+        exit(1);
+    }
+
+    printf("[#] Your account settings is as below:\n\n");
+    printf("[#] Account type: Department Head\n");
+    printf("[#] Academic group name: %s\n", head->groupName);
+    printf("[#] Name: %s %s\n", head->firstName, head->lastName);
+    printf("[#] Username: %s\n[#] Email: %s\n", head->username, head->email);
+    printf("[#] National number: %s\n", head->nationalNumber);
+    printf("[#] Phone number: %s\n\n", head->phoneNumber);
+
+    printf("[#] The editable options are listed below:\n");
+    printf("1. Password\n2. Email\n3. Phone number\n\n0. Cancel\n\n");
+    printf("[?] Enter your choice (enter number): ");
+
+    int digit = inputDigit();
+    if (digit == 0) {
+        printf("[#] Operation canceled");
+        Sleep(1000);
+    }
+    else if (digit == 1) {
+        char old_password[MAX_PASSWORD_LEN];
+        printf("[?] Enter old password: ");
+        inputPassword(old_password, MAX_PASSWORD_LEN);
+        if (strcmp(head->password, old_password) == 0) {
+            char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
+            printf("[?] Enter new password: ");
+            inputPassword(password1, MAX_PASSWORD_LEN);
+            printf("[?] Enter password again: ");
+            inputPassword(password2, MAX_PASSWORD_LEN);
+
+            if (strcmp(password1, password2) == 0) {
+                strcpy(head->password, password1);
+                setDepartmentHeads(&start, &end);
+                printf("[#] Password changed");
+            }
+            else {
+                printf("[!] Passwords do not match");
+            }
+        }
+        else {
+            printf("[!] Password wrong");
+        }
+
+        Sleep(1000);
+    }
+    else if (digit == 2) {
+        printf("[?] Enter new email: ");
+        inputString(head->email, MAX_EMAIL_LEN);
+        setDepartmentHeads(&start, &end);
+        printf("[#] Email changed");
+        Sleep(1000);
+    }
+    else if (digit == 3) {
+        printf("[?] Enter new phone number: ");
+        inputStringNumber(head->phoneNumber, PHONE_NUMBER_LEN);
+        setDepartmentHeads(&start, &end);
+        printf("[#] Phone number changed");
+        Sleep(1000);
+    }
+
+    freeDepartmentHeads(start, end);
 }
 
 void deleteUser(void) {
