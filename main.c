@@ -111,6 +111,7 @@ void setGrades(struct grade *start, struct grade *end);
 void freeGrades(struct grade *start, struct grade *end);
 struct departmentHead *getHeadByUsername(struct departmentHead *start, struct departmentHead *end, char username[]);
 struct academicStaff *getStaffByUsername(struct academicStaff *start, struct academicStaff *end, char username[]);
+struct lesson *getLessonByLessonCode(struct lesson *start, struct lesson *end, char lessonCode[]);
 
 User loginPanel(void);
 User loginAdmin(void);
@@ -130,6 +131,7 @@ void addNewHead(void);
 void addNewStaff(void);
 void addNewLesson(void);
 void addNewGrade(User user);
+void editLesson(void);
 void createBackup(void);
 void useBackup(void);
 
@@ -355,11 +357,20 @@ void headMainMenu(User user) {
     printf("\n[?] Enter your choice (enter number): ");
     int digit = inputDigit();
 
+    if (digit == 0) {
+        user = loginPanel();
+        mainMenu(user);
+        exit(0);
+    }
+
     if (digit == 1)
         addNewLesson();
 
     else if (digit == 2)
         addNewGrade(user);
+
+    else if (digit == 3)
+        editLesson();
 
     headMainMenu(user);
 }
@@ -789,6 +800,53 @@ void addNewGrade(User user) {
 
     printf("[#] Grades added");
     Sleep(1000);
+}
+
+void editLesson(void) {
+    char lessonCode[LESSON_CODE_LEN];
+    printf("[?] Enter lesson code: ");
+    inputStringNumber(lessonCode, LESSON_CODE_LEN);
+
+    struct lesson *start, *end, *curr;
+    getLessons(&start, &end);
+    curr = getLessonByLessonCode(start, end, lessonCode);
+    if (curr == NULL) {
+        printf("[!] Lesson not found");
+        Sleep(1000);
+    }
+    else {
+        printf("[#] Lesson found:\nName: %s\n", curr->name);
+        printf("Type: %s\nUnits: %d\n", curr->type, curr->units);
+        printf("[#] The available options to edit are listed below:\n\n");
+        printf("1. Lesson name\n2. Lesson type\n3. Units\n\n0. Cancel\n");
+        printf("[?] Enter your choice (enter number): ");
+
+        int digit = inputDigit();
+        if (digit == 1) {
+            printf("\n[?] Enter new name: ");
+            inputString(curr->name, MAX_NAME_LEN);
+            setLessons(start, end);
+            printf("[#] Changes, submitted");
+            Sleep(1000);
+        }
+        else if (digit == 2) {
+            printf("\n[?] Enter new type: ");
+            inputString(curr->type, MAX_NAME_LEN);
+            setLessons(start, end);
+            printf("[#] Changes, submitted");
+            Sleep(1000);
+        }
+        else if (digit == 3) {
+            char strNumber[5];
+            printf("\n[?] Enter new number of units: ");
+            inputStringNumber(strNumber, 5);
+            curr->units = atoi(strNumber);
+            setLessons(start, end);
+            printf("[#] Changes, submitted");
+            Sleep(1000);
+        }
+    }
+    freeLessons(start, end);
 }
 
 void deleteUser(void) {
@@ -1240,6 +1298,7 @@ void getLessons(struct lesson **start, struct lesson **end) {
         fgets(curr->status, STATUS_LEN, fp);
         removeNewLine(curr->status);
 
+        curr->next = NULL;
         if (*start == NULL) {
             *start = curr;
             *end = *start;
@@ -1273,6 +1332,24 @@ void setLessons(struct lesson *start, struct lesson *end) {
     }
 
     fclose(fp);
+}
+
+struct lesson *getLessonByLessonCode(struct lesson *start, struct lesson *end, char lessonCode[]) {
+    struct lesson *curr;
+    curr = start;
+    while (curr != NULL) {
+        if (strcmp(curr->status, "deleted") == 0) {
+            curr = curr->next;
+            continue;
+        }
+
+        if (strcmp(curr->code, lessonCode) == 0)
+            break;
+
+        curr = curr->next;
+    }
+
+    return curr;
 }
 
 void freeLessons(struct lesson *start, struct lesson *end) {
