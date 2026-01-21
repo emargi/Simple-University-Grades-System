@@ -4,6 +4,7 @@
 #include <string.h>
 #include <conio.h>
 #include <windows.h>
+#include <time.h>
 
 // constants
 // characters + '\n' (fgets BUG) + '\0'
@@ -17,10 +18,12 @@
 #define DATE_LEN 12
 #define STATUS_LEN 10
 #define LESSON_CODE_LEN 7
+#define STUDENT_NUMBER_LEN 12
 
 #define HEAD_PROFILES_FILE "department_head_profiles.txt"
 #define STAFF_PROFILES_FILE "academic_staff_profiles.txt"
 #define LESSONS_FILE "lessons.txt"
+#define GRADES_FILE "grades.txt"
 
 const char USERNAME_CHARS[] = "abcdefghijklmnopqrstuvwxyz1234567890_";
 
@@ -64,16 +67,26 @@ struct academicStaff {
 struct lesson {
     char name[MAX_NAME_LEN];
     char type[MAX_NAME_LEN];
-    char code[MAX_NAME_LEN];
+    char code[LESSON_CODE_LEN];
     char status[STATUS_LEN];
     int units;
     struct lesson *next;
+};
+
+struct grade {
+    char studentNumber[STUDENT_NUMBER_LEN];
+    char lessonCode[LESSON_CODE_LEN];
+    char username[MAX_USERNAME_LEN];
+    float grade;
+    long long int time;
+    struct grade *next;
 };
 
 // function prototypes
 int inputDigit(void);
 void inputString(char input[], int size);
 void inputStringNumber(char strNumber[], int size);
+void inputStringFloat(char strFloat[], int size);
 void inputUsername(char username[], int size);
 void inputPassword(char password[], int size);
 
@@ -93,6 +106,9 @@ void freeAcademicStaff(struct academicStaff *start, struct academicStaff *end);
 void getLessons(struct lesson **start, struct lesson **end);
 void setLessons(struct lesson *start, struct lesson *end);
 void freeLessons(struct lesson *start, struct lesson *end);
+void getGrades(struct grade **start, struct grade **end);
+void setGrades(struct grade *start, struct grade *end);
+void freeGrades(struct grade *start, struct grade *end);
 struct departmentHead *getHeadByUsername(struct departmentHead *start, struct departmentHead *end, char username[]);
 struct academicStaff *getStaffByUsername(struct academicStaff *start, struct academicStaff *end, char username[]);
 
@@ -113,6 +129,7 @@ void listStaff(void);
 void addNewHead(void);
 void addNewStaff(void);
 void addNewLesson(void);
+void addNewGrade(User user);
 void createBackup(void);
 void useBackup(void);
 
@@ -303,33 +320,27 @@ void adminMainMenu(User user) {
         mainMenu(user);
     }
 
-    else if (choice == 1) {
+    else if (choice == 1)
         addNewHead();
-    }
 
-    else if (choice == 2) {
+    else if (choice == 2)
         addNewStaff();
-    }
 
-    else if (choice == 3) {
+    else if (choice == 3)
         listUsers();
-    }
 
-    else if (choice == 4) {
+    else if (choice == 4)
         deleteUser();
-    }
 
     else if (choice == 5) {
         // ...
     }
 
-    else if (choice == 6) {
+    else if (choice == 6)
         createBackup();
-    }
 
-    else if (choice == 7) {
+    else if (choice == 7)
         useBackup();
-    }
 
     mainMenu(user);
 }
@@ -346,6 +357,9 @@ void headMainMenu(User user) {
 
     if (digit == 1)
         addNewLesson();
+
+    else if (digit == 2)
+        addNewGrade(user);
 
     headMainMenu(user);
 }
@@ -717,6 +731,63 @@ void addNewLesson(void) {
     freeLessons(first, last);
 
     printf("[#] Lessons added");
+    Sleep(1000);
+}
+
+void addNewGrade(User user) {
+    char strNum[5];
+    printf("[?] Enter the number of grades you want to add: ");
+    inputStringNumber(strNum, 5);
+    int num = atoi(strNum);
+
+    struct grade *first, *curr, *last;
+    first = NULL;
+    last = NULL;
+    int i;
+    for (i = 0; i < num; i++) {
+        curr = malloc(sizeof(struct grade));
+        printf("[#] Enter the information of grade #%d:\n", i + 1);
+
+        printf("[?] Enter lesson code: ");
+        inputStringNumber(curr->lessonCode, LESSON_CODE_LEN);
+
+        printf("[?] Enter student number: ");
+        inputStringNumber(curr->studentNumber, STUDENT_NUMBER_LEN);
+
+        char strNumber[10];
+        printf("[?] Enter grade: ");
+        inputStringFloat(strNumber, 10);
+        curr->grade = atof(strNumber);
+
+        strcpy(curr->username, user.username);
+        curr->time = time(NULL);
+        curr->next = NULL;
+
+        if (first == NULL) {
+            first = curr;
+            last = curr;
+        }
+        else {
+            last->next = curr;
+            last = curr;
+        }
+    }
+
+    struct grade *start, *end;
+    getGrades(&start, &end);
+    if (start == NULL) {
+        start = first;
+        end = last;
+    }
+    else {
+        end->next = first;
+        end = last;
+    }
+
+    setGrades(start, end);
+    freeGrades(start, end);
+
+    printf("[#] Grades added");
     Sleep(1000);
 }
 
@@ -1213,6 +1284,92 @@ void freeLessons(struct lesson *start, struct lesson *end) {
     }
 }
 
+void getGrades(struct grade **start, struct grade **end) {
+    FILE *fp;
+    fp = fopen(GRADES_FILE, "r");
+    if (fp == NULL) {
+        fp = fopen(GRADES_FILE, "w");
+        fclose(fp);
+        fp = fopen(GRADES_FILE, "r");
+        if (fp == NULL) {
+            printf("[Error] Something went wrong while reading a file");
+            exit(1);
+        }
+    }
+
+    *start = NULL;
+    *end = NULL;
+    struct grade *curr;
+    while (!feof(fp)) {
+        curr = malloc(sizeof(struct grade));
+
+        if (fgets(curr->studentNumber, STUDENT_NUMBER_LEN, fp) == NULL) {
+            free(curr);
+            break;
+        }
+        removeNewLine(curr->studentNumber);
+
+        fgets(curr->lessonCode, LESSON_CODE_LEN, fp);
+        removeNewLine(curr->lessonCode);
+
+        fgets(curr->username, MAX_USERNAME_LEN, fp);
+        removeNewLine(curr->username);
+
+        char strNumber[30];
+        fgets(strNumber, 30, fp);
+        removeNewLine(strNumber);
+        curr->grade = atof(strNumber);
+
+        fgets(strNumber, 30, fp);
+        removeNewLine(strNumber);
+        curr->time = atoll(strNumber);
+
+        curr->next = NULL;
+
+        if (*start == NULL) {
+            *start = curr;
+            *end = *start;
+        }
+        else {
+            (*end)->next = curr;
+            *end = curr;
+        }
+    }
+
+    fclose(fp);
+}
+
+void setGrades(struct grade *start, struct grade *end) {
+    FILE *fp;
+    fp = fopen(GRADES_FILE, "w");
+    if (fp == NULL) {
+        printf("[Error] Something went wrong while writing to a file");
+        exit(1);
+    }
+
+    struct grade *curr;
+    curr = start;
+    while (curr != NULL) {
+        fprintf(fp, "%s\n", curr->studentNumber);
+        fprintf(fp, "%s\n", curr->lessonCode);
+        fprintf(fp, "%s\n", curr->username);
+        fprintf(fp, "%f\n", curr->grade);
+        fprintf(fp, "%lld\n", curr->time);
+        curr = curr->next;
+    }
+
+    fclose(fp);
+}
+
+void freeGrades(struct grade *start, struct grade *end) {
+    end = start;
+    while (end != NULL) {
+        end = start->next;
+        free(start);
+        start = end;
+    }
+}
+
 int inputDigit(void) {
     char input;
     while (1) {
@@ -1220,7 +1377,7 @@ int inputDigit(void) {
         if (isdigit(input))
         break;
     }
-    printf("%c", input);
+    printf("%c\n", input);
     
     int digit = input - '0';
     return digit;
@@ -1273,6 +1430,36 @@ void inputStringNumber(char strNumber[], int size) {
         }
 
         if (isdigit(ch)) {
+            putchar(ch);
+            strNumber[n_chars] = ch;
+            n_chars++;
+        }
+    }
+    putchar('\n');
+    strNumber[n_chars] = '\0';
+}
+
+void inputStringFloat(char strNumber[], int size) {
+    fflush(stdin);
+
+    int decimalPoint = 0;
+    int n_chars = 0;
+    while (n_chars < size - 2) {
+        char ch = getch();
+        if (ch == '\n' || ch == '\r')
+            break;
+
+        if (ch == '\b') {
+            if (n_chars == 0)
+                continue;
+
+            printf("\b \b");
+            n_chars--;
+            if (strNumber[n_chars] == '.')
+                decimalPoint = 0;
+        }
+
+        if (isdigit(ch) || ch == '.') {
             putchar(ch);
             strNumber[n_chars] = ch;
             n_chars++;
