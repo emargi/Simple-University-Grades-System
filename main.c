@@ -24,6 +24,7 @@
 #define STAFF_PROFILES_FILE "academic_staff_profiles.txt"
 #define LESSONS_FILE "lessons.txt"
 #define GRADES_FILE "grades.txt"
+#define STUDENTS_FILE "students.txt"
 
 const char USERNAME_CHARS[] = "abcdefghijklmnopqrstuvwxyz1234567890_";
 
@@ -62,6 +63,19 @@ struct academicStaff {
     char status[STATUS_LEN];
     int rank;
     struct academicStaff *next;
+};
+
+struct student {
+    char firstName[MAX_NAME_LEN];
+    char lastName[MAX_NAME_LEN];
+    char nationalNumber[NATIONAL_NUMBER_LEN];
+    char birthDate[DATE_LEN];
+    char birthCity[MAX_NAME_LEN];
+    char major[MAX_NAME_LEN];
+    char studentNumber[STUDENT_NUMBER_LEN];
+    char phoneNumber[PHONE_NUMBER_LEN];
+    char email[MAX_EMAIL_LEN];
+    struct student *next;
 };
 
 struct lesson {
@@ -103,6 +117,9 @@ void freeDepartmentHeads(struct departmentHead *start, struct departmentHead *en
 void getAcademicStaff(struct academicStaff **start, struct academicStaff **end);
 void setAcademicStaff(struct academicStaff **start, struct academicStaff **end);
 void freeAcademicStaff(struct academicStaff *start, struct academicStaff *end);
+void getStudents(struct student **start, struct student **end);
+void setStudents(struct student *start, struct student *end);
+void freeStudents(struct student *start, struct student *end);
 void getLessons(struct lesson **start, struct lesson **end);
 void setLessons(struct lesson *start, struct lesson *end);
 void freeLessons(struct lesson *start, struct lesson *end);
@@ -130,6 +147,7 @@ void listStaff(void);
 
 void addNewHead(void);
 void addNewStaff(void);
+void addNewStudent(void);
 void addNewLesson(void);
 void addNewGrade(User user);
 void editLesson(void);
@@ -146,6 +164,7 @@ void deleteLesson(void);
 // main function
 void main() {
     printf("Welcome to Student Management System");
+    Sleep(1000);
 
     User user = loginPanel();
     mainMenu(user);
@@ -153,7 +172,6 @@ void main() {
 
 // function definitions
 User loginPanel(void) {
-    Sleep(1000);
     system("cls");
 
     printf("[#] To use this program, you should first login to your account\n");
@@ -389,7 +407,23 @@ void headMainMenu(User user) {
 }
 
 void staffMainMenu(User user) {
-    // ...
+    system("cls");
+    printf("[#] The available actions are listed below:\n");
+    printf("\n1. Add student\n2. Edit student\n3. Add grade\n4. Log");
+    printf("\n5. Account settings\n\n0. Log out");
+    printf("\n\n[?] Enter your choice (enter number): ");
+
+    int digit = inputDigit();
+    if (digit == 0) {
+        User user = loginPanel();
+        mainMenu(user);
+        exit(0);
+    }
+
+    else if (digit == 1)
+        addNewStudent();
+
+    staffMainMenu(user);
 }
 
 void listUsers(void) {
@@ -696,6 +730,76 @@ void addNewStaff(void) {
     freeAcademicStaff(start, end);
     
     printf("\n[#] New academic staff added");
+    Sleep(1000);
+}
+
+void addNewStudent(void) {
+    char strNum[5];
+    printf("[?] Enter number of students you want to enter: ");
+    inputStringNumber(strNum, 5);
+    int num = atoi(strNum);
+
+    struct student *first, *curr, *last;
+    first = NULL;
+    last = NULL;
+    int i;
+    for (i = 0; i < num; i++) {
+        curr = malloc(sizeof(struct student));
+        printf("\n[#] Enter the information of student #%d:\n", i + 1);
+
+        printf("[?] Enter first name: ");
+        inputString(curr->firstName, MAX_NAME_LEN);
+
+        printf("[?] Enter last name: ");
+        inputString(curr->lastName, MAX_NAME_LEN);
+
+        printf("[?] Enter national number: ");
+        inputStringNumber(curr->nationalNumber, NATIONAL_NUMBER_LEN);
+
+        printf("[?] Enter birth date: ");
+        inputString(curr->birthDate, DATE_LEN);
+
+        printf("[?] Enter birth city name: ");
+        inputString(curr->birthCity, MAX_NAME_LEN);
+
+        printf("[?] Enter major: ");
+        inputString(curr->major, MAX_NAME_LEN);
+
+        printf("[?] Enter student number: ");
+        inputStringNumber(curr->studentNumber, MAX_NAME_LEN);
+
+        printf("[?] Enter phone number: ");
+        inputStringNumber(curr->phoneNumber, PHONE_NUMBER_LEN);
+
+        printf("[?] Enter email: ");
+        inputString(curr->email, MAX_EMAIL_LEN);
+
+        curr->next = NULL;
+        if (first == NULL) {
+            first = curr;
+            last = first;
+        }
+        else {
+            last->next = curr;
+            last = curr;
+        }
+    }
+
+    struct student *start, *end;
+    getStudents(&start, &end);
+    if (start == NULL) {
+        start = first;
+        end = last;
+    }
+    else {
+        end->next = first;
+        end = last;
+    }
+
+    setStudents(start, end);
+    freeStudents(start, end);
+
+    printf("[#] Students added");
     Sleep(1000);
 }
 
@@ -1398,6 +1502,104 @@ struct academicStaff *getStaffByUsername(struct academicStaff *start, struct aca
 }
 
 void freeAcademicStaff(struct academicStaff *start, struct academicStaff *end) {
+    end = start;
+    while (end != NULL) {
+        end = start->next;
+        free(start);
+        start = end;
+    }
+}
+
+void getStudents(struct student **start, struct student **end) {
+    FILE *fp;
+    fp = fopen(STUDENTS_FILE, "r");
+    if (fp == NULL) {
+        fp = fopen(STUDENTS_FILE, "w");
+        fclose(fp);
+        fp = fopen(STUDENTS_FILE, "r");
+        if (fp == NULL) {
+            printf("[Error] Something went wrong while reading a file");
+            exit(1);
+        }
+    }
+
+    struct student *curr;
+    *start = NULL;
+    *end = NULL;
+    while (!feof(fp)) {
+        curr = malloc(sizeof(struct student));
+
+        if (fgets(curr->firstName, MAX_NAME_LEN, fp) == NULL) {
+            free(curr);
+            break;
+        }
+        removeNewLine(curr->firstName);
+
+        fgets(curr->lastName, MAX_NAME_LEN, fp);
+        removeNewLine(curr->lastName);
+
+        fgets(curr->nationalNumber, NATIONAL_NUMBER_LEN, fp);
+        removeNewLine(curr->nationalNumber);
+
+        fgets(curr->birthDate, DATE_LEN, fp);
+        removeNewLine(curr->birthDate);
+
+        fgets(curr->birthCity, MAX_NAME_LEN, fp);
+        removeNewLine(curr->birthCity);
+
+        fgets(curr->major, MAX_NAME_LEN, fp);
+        removeNewLine(curr->major);
+
+        fgets(curr->studentNumber, STUDENT_NUMBER_LEN, fp);
+        removeNewLine(curr->studentNumber);
+
+        fgets(curr->phoneNumber, PHONE_NUMBER_LEN, fp);
+        removeNewLine(curr->phoneNumber);
+
+        fgets(curr->email, MAX_EMAIL_LEN, fp);
+        removeNewLine(curr->email);
+
+        curr->next = NULL;
+        if (*start == NULL) {
+            *start = curr;
+            *end = *start;
+        }
+        else {
+            (*end)->next = curr;
+            *end = curr;
+        }
+    }
+
+    fclose(fp);
+}
+
+void setStudents(struct student *start, struct student *end) {
+    FILE *fp;
+    fp = fopen(STUDENTS_FILE, "w");
+    if (fp == NULL) {
+        printf("[Error] Something went wrong while writing to a file");
+        exit(1);
+    }
+
+    struct student *curr;
+    curr = start;
+    while (curr != NULL) {
+        fprintf(fp, "%s\n", curr->firstName);
+        fprintf(fp, "%s\n", curr->lastName);
+        fprintf(fp, "%s\n", curr->nationalNumber);
+        fprintf(fp, "%s\n", curr->birthDate);
+        fprintf(fp, "%s\n", curr->birthCity);
+        fprintf(fp, "%s\n", curr->major);
+        fprintf(fp, "%s\n", curr->studentNumber);
+        fprintf(fp, "%s\n", curr->phoneNumber);
+        fprintf(fp, "%s\n", curr->email);
+        curr = curr->next;
+    }
+
+    fclose(fp);
+}
+
+void freeStudents(struct student *start, struct student *end) {
     end = start;
     while (end != NULL) {
         end = start->next;
