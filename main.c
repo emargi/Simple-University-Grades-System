@@ -128,6 +128,7 @@ void setGrades(struct grade *start, struct grade *end);
 void freeGrades(struct grade *start, struct grade *end);
 struct departmentHead *getHeadByUsername(struct departmentHead *start, struct departmentHead *end, char username[]);
 struct academicStaff *getStaffByUsername(struct academicStaff *start, struct academicStaff *end, char username[]);
+struct student *getStudentByStudentNumber(struct student *start, struct student *end, char studentNumber[]);
 struct lesson *getLessonByLessonCode(struct lesson *start, struct lesson *end, char lessonCode[]);
 struct grade *getGradeByLessonCodeAndStudentNumber(struct grade *start, struct grade *end, char lessonCode[], char studentNumber[]);
 
@@ -153,6 +154,7 @@ void addNewGrade(User user);
 void editLesson(void);
 void editGrade(void);
 void editHead(User user);
+void editStudent(void);
 void createBackup(void);
 void useBackup(void);
 
@@ -422,6 +424,12 @@ void staffMainMenu(User user) {
 
     else if (digit == 1)
         addNewStudent();
+
+    else if (digit == 2)
+        editStudent();
+
+    else if (digit == 3)
+        addNewGrade(user);
 
     staffMainMenu(user);
 }
@@ -1066,6 +1074,61 @@ void editHead(User user) {
     freeDepartmentHeads(start, end);
 }
 
+void editStudent(void) {
+    char studentNumber[STUDENT_NUMBER_LEN];
+    printf("[?] Enter student number: ");
+    inputStringNumber(studentNumber, STUDENT_NUMBER_LEN);
+
+    struct student *start, *curr, *end;
+    getStudents(&start, &end);
+    curr = getStudentByStudentNumber(start, end, studentNumber);
+
+    if (curr == NULL) {
+        printf("[#] Student not found");
+        Sleep(1000);
+    }
+    else {
+        printf("[#] Student found:\n[#] Name: %s %s\n", curr->firstName, curr->lastName);
+        printf("[#] National number: %s\n", curr->nationalNumber);
+        printf("[#] Birth date: %s\n[#] Birth city: %s\n", curr->birthDate, curr->birthCity);
+        printf("[#] Major: %s\n[#] Student number: %s\n", curr->major, curr->studentNumber);
+        printf("[#] Phone number: %s\n[#] Email: %s\n", curr->phoneNumber, curr->email);
+
+        printf("\n[#] The available options to edit are listed below:\n");
+        printf("\n1. Major\n2. Phone number\n3. Email\n\n0. Cancel");
+        printf("\n\n[?] Enter your choice (enter number): ");
+        int digit = inputDigit();
+
+        if (digit == 0) {
+            printf("[#] Operation canceled");
+            Sleep(1000);
+        }
+        else if (digit == 1) {
+            printf("[?] Enter new major: ");
+            inputString(curr->major, MAX_NAME_LEN);
+            setStudents(start, end);
+            printf("[#] Changes saved");
+            Sleep(1000);
+        }
+        else if (digit == 2) {
+            printf("[?] Enter new phone number: ");
+            inputStringNumber(curr->phoneNumber, PHONE_NUMBER_LEN);
+            setStudents(start, end);
+            printf("[#] Changes saved");
+            Sleep(1000);
+        }
+        else if (digit == 3) {
+            printf("[?] Enter new email: ");
+            inputString(curr->email, PHONE_NUMBER_LEN);
+            setStudents(start, end);
+            printf("[#] Changes saved");
+            Sleep(1000);
+        }
+    }
+
+    freeStudents(start, end);
+}
+
 void deleteUser(void) {
     char username[MAX_USERNAME_LEN];
     printf("[?] Enter username (Enter 0 to ccancel): ");
@@ -1597,6 +1660,19 @@ void setStudents(struct student *start, struct student *end) {
     }
 
     fclose(fp);
+}
+
+struct student *getStudentByStudentNumber(struct student *start, struct student *end, char studentNumber[]) {
+    struct student *curr;
+    curr = start;
+    while (curr != NULL) {
+        if (strcmp(curr->studentNumber, studentNumber) == 0)
+            break;
+
+        curr = curr->next;
+    }
+
+    return curr;
 }
 
 void freeStudents(struct student *start, struct student *end) {
