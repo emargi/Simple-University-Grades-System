@@ -142,9 +142,13 @@ void adminMainMenu(User user);
 void headMainMenu(User user);
 void staffMainMenu(User user);
 
+void adminLog(User user);
+
 void listUsers(void);
 void listHeads(void);
 void listStaff(void);
+void listDeletedHeads(void);
+void listDeletedStaff(void);
 
 void addNewHead(void);
 void addNewStaff(void);
@@ -359,9 +363,8 @@ void adminMainMenu(User user) {
     else if (choice == 4)
         deleteUser();
 
-    else if (choice == 5) {
-        // ...
-    }
+    else if (choice == 5)
+        adminLog(user);
 
     else if (choice == 6)
         createBackup();
@@ -438,6 +441,40 @@ void staffMainMenu(User user) {
     staffMainMenu(user);
 }
 
+void adminLog(User user) {
+    system("cls");
+
+    printf("[#] Welcome to admin log menu\n");
+    printf("[#] The available actions here are listed below:\n");
+    printf("\n1. List of department heads\n2. List of academic staff");
+    printf("\n3. List of deleted department heads\n4. List of deleted academic staff");
+    printf("\n5. List of successfull logins\n6. List of unsuccessful logins");
+    printf("\n\n0. Return to the main menu\n\n");
+    printf("[?] Enter your choice (enter number): ");
+    int digit = inputDigit();
+
+    if (digit == 0) {
+        mainMenu(user);
+        exit(0);
+    }
+
+    if (digit == 1)
+        listHeads();
+
+    else if (digit == 2)
+        listStaff();
+
+    else if (digit == 3)
+        listDeletedHeads();
+
+    else if (digit == 4)
+        listDeletedStaff();
+
+    printf("\n\nPress any key to continue...");
+    getch();
+    adminLog(user);
+}
+
 void listUsers(void) {
     system("cls");
 
@@ -492,6 +529,8 @@ void listHeads(void) {
         curr = curr->next;
         num++;
     }
+
+    freeDepartmentHeads(start, end);
 }
 
 void listStaff(void) {
@@ -534,8 +573,78 @@ void listStaff(void) {
         curr = curr->next;
         num++;
     }
+
+    freeAcademicStaff(start, end);
 }
 
+void listDeletedHeads(void) {
+    struct departmentHead *start, *end;
+    getDepartmentHeads(&start, &end);
+
+    if (start != NULL)
+        printf("[#] List of deleted department heads:\n");
+
+    else
+        printf("[#] No deleted department heads found");
+
+    struct departmentHead *curr;
+    curr = start;
+    int num = 1;
+    while (curr != NULL) {
+        if (strcmp(curr->status, "deleted") != 0) {
+            curr = curr->next;
+            continue;
+        }
+
+        printf("\n[#] Index: %d\n", num);
+        printf("[#] Name: %s %s\n", curr->firstName, curr->lastName);
+        printf("[#] Join date: %s\n", curr->joinDate);
+        printf("[#] Academic group: %s\n", curr->groupName);
+        printf("[#] Username: %s\n", curr->username);
+        printf("[#] National number: %s\n", curr->nationalNumber);
+        printf("[#] Phone number: %s\n", curr->phoneNumber);
+        printf("[#] Email: %s\n", curr->email);
+        printf("[#] Status: %s\n", curr->status);
+
+        curr = curr->next;
+        num++;
+    }
+
+    freeDepartmentHeads(start, end);
+}
+
+void listDeletedStaff(void) {
+    struct academicStaff *start, *end;
+    getAcademicStaff(&start, &end);
+
+    if (start != NULL)
+        printf("[#] List of deleted academic staff:\n");
+
+    else
+        printf("[#] No deleted academic staff found");
+
+    struct academicStaff *curr;
+    curr = start;
+    int num = 1;
+    while (curr != NULL) {
+        if (strcmp(curr->status, "deleted") != 0) {
+            curr = curr->next;
+            continue;
+        }
+
+        printf("\n[#] Index: %d\n", num);
+        printf("[#] Name: %s %s\n", curr->firstName, curr->lastName);
+        printf("[#] Join date: %s\n", curr->joinDate);
+        printf("[#] Rank: %d\n", curr->rank);
+        printf("[#] Username: %s\n", curr->username);
+        printf("[#] Phone number: %s\n", curr->phoneNumber);
+        printf("[#] Email: %s\n", curr->email);
+        printf("[#] Status: %s\n", curr->status);
+
+        curr = curr->next;
+        num++;
+    }
+}
 void addNewHead() {
     int num;
     printf("[?] Enter the number of department heads you want to add: ");
