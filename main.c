@@ -154,6 +154,7 @@ void addNewGrade(User user);
 void editLesson(void);
 void editGrade(void);
 void editHead(User user);
+void editStaff(User user);
 void editStudent(void);
 void createBackup(void);
 void useBackup(void);
@@ -431,6 +432,9 @@ void staffMainMenu(User user) {
     else if (digit == 3)
         addNewGrade(user);
 
+    else if (digit == 5)
+        editStaff(user);
+
     staffMainMenu(user);
 }
 
@@ -451,31 +455,39 @@ void listHeads(void) {
     getDepartmentHeads(&start, &end);
 
     if (start != NULL) {
-        printf("[#] List of department heads:\n");
+        printf("[#] List of brief infromation of department heads:\n");
+        printf("+----+----------------------+---------------------------+-----------------+------------+\n");
+        printf("| No | Ac. Group            | Last Name                 | Username        | Status     |\n");
+        printf("+----+----------------------+---------------------------+-----------------+------------+\n");
     }
 
     int num = 1;
     struct departmentHead *curr;
     curr = start;
     while (curr != NULL) {
-        if (strcmp(curr->status, "deleted") == 0) {
-            curr = curr->next;
-            continue;
-        }
+        printf("| %-02d | %-20s | %-25s |",  num, curr->groupName, curr->lastName);
+        printf(" %-15s | %-10s |\n", curr->username, curr->status);
+        printf("+----+----------------------+---------------------------+-----------------+------------+\n");
+        num++;
+        curr = curr->next;
+    }
 
-        char name[50];
-        strcpy(name, curr->firstName);
-        strcat(name, " ");
-        strcat(name, curr->lastName);
+    if (start != NULL) {
+        printf("[#] List of full information of department heads:\n");
+    }
 
+    curr = start;
+    num = 1;
+    while (curr != NULL) {
         printf("\n[#] Index: %d\n", num);
-        printf("[#] Name: %s\n", name);
+        printf("[#] Name: %s %s\n", curr->firstName, curr->lastName);
         printf("[#] Join date: %s\n", curr->joinDate);
         printf("[#] Academic group: %s\n", curr->groupName);
         printf("[#] Username: %s\n", curr->username);
         printf("[#] National number: %s\n", curr->nationalNumber);
         printf("[#] Phone number: %s\n", curr->phoneNumber);
         printf("[#] Email: %s\n", curr->email);
+        printf("[#] Status: %s\n", curr->status);
 
         curr = curr->next;
         num++;
@@ -487,29 +499,37 @@ void listStaff(void) {
     getAcademicStaff(&start, &end);
 
     if (start != NULL) {
-        printf("[#] List of academic staff:\n");
+        printf("[#] List of brief information of academic staff:\n");
+        printf("+----+------+---------------------------+-----------------+------------+\n");
+        printf("| No | Rank | Last Name                 | Username        | Status     |\n");
+        printf("+----+------+---------------------------+-----------------+------------+\n");
     }
 
     int num = 1;
     struct academicStaff *curr = start;
     while (curr != NULL) {
-        if (strcmp(curr->status, "deleted") == 0) {
-            curr = curr->next;
-            continue;
-        }
+        printf("| %-2d | %-4d | %-25s |", num, curr->rank, curr->lastName);
+        printf(" %-15s | %-10s |\n", curr->username, curr->status);
+        printf("+----+------+---------------------------+-----------------+------------+\n");
+        num++;
+        curr = curr->next;
+    }
 
-        char name[50];
-        strcpy(name, curr->firstName);
-        strcat(name, " ");
-        strcat(name, curr->lastName);
+    if (start != NULL) {
+        printf("[#] List of full information of academic staff:\n");
+    }
 
+    curr = start;
+    num = 1;
+    while (curr != NULL) {
         printf("\n[#] Index: %d\n", num);
-        printf("[#] Name: %s\n", name);
+        printf("[#] Name: %s %s\n", curr->firstName, curr->lastName);
         printf("[#] Join date: %s\n", curr->joinDate);
         printf("[#] Rank: %d\n", curr->rank);
         printf("[#] Username: %s\n", curr->username);
         printf("[#] Phone number: %s\n", curr->phoneNumber);
         printf("[#] Email: %s\n", curr->email);
+        printf("[#] Status: %s\n", curr->status);
 
         curr = curr->next;
         num++;
@@ -1072,6 +1092,75 @@ void editHead(User user) {
     }
 
     freeDepartmentHeads(start, end);
+}
+
+void editStaff(User user) {
+    struct academicStaff *start, *end, *staff;
+    getAcademicStaff(&start, &end);
+    staff = getStaffByUsername(start, end, user.username);
+    if (staff == NULL) {
+        printf("[Error] Something went wrong.");
+        exit(1);
+    }
+
+    printf("[#] Your account settings is as below:\n\n");
+    printf("[#] Account type: Academic Staff\n");
+    printf("[#] Name: %s %s\n", staff->firstName, staff->lastName);
+    printf("[#] Username: %s\n[#] Email: %s\n", staff->username, staff->email);
+    printf("[#] Rank: %d\n", staff->rank);
+    printf("[#] Phone number: %s\n\n", staff->phoneNumber);
+
+    printf("[#] The editable options are listed below:\n");
+    printf("1. Password\n2. Email\n3. Phone number\n\n0. Cancel\n\n");
+    printf("[?] Enter your choice (enter number): ");
+
+    int digit = inputDigit();
+    if (digit == 0) {
+        printf("[#] Operation canceled");
+        Sleep(1000);
+    }
+    else if (digit == 1) {
+        char old_password[MAX_PASSWORD_LEN];
+        printf("[?] Enter old password: ");
+        inputPassword(old_password, MAX_PASSWORD_LEN);
+        if (strcmp(staff->password, old_password) == 0) {
+            char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
+            printf("[?] Enter new password: ");
+            inputPassword(password1, MAX_PASSWORD_LEN);
+            printf("[?] Enter password again: ");
+            inputPassword(password2, MAX_PASSWORD_LEN);
+
+            if (strcmp(password1, password2) == 0) {
+                strcpy(staff->password, password1);
+                setAcademicStaff(&start, &end);
+                printf("[#] Password changed");
+            }
+            else {
+                printf("[!] Passwords do not match");
+            }
+        }
+        else {
+            printf("[!] Password wrong");
+        }
+
+        Sleep(1000);
+    }
+    else if (digit == 2) {
+        printf("[?] Enter new email: ");
+        inputString(staff->email, MAX_EMAIL_LEN);
+        setAcademicStaff(&start, &end);
+        printf("[#] Email changed");
+        Sleep(1000);
+    }
+    else if (digit == 3) {
+        printf("[?] Enter new phone number: ");
+        inputStringNumber(staff->phoneNumber, PHONE_NUMBER_LEN);
+        setAcademicStaff(&start, &end);
+        printf("[#] Phone number changed");
+        Sleep(1000);
+    }
+
+    freeAcademicStaff(start, end);
 }
 
 void editStudent(void) {
