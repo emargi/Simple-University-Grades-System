@@ -143,6 +143,7 @@ void headMainMenu(User user);
 void staffMainMenu(User user);
 
 void adminLog(User user);
+void headLog(User user);
 
 void listUsers(void);
 void listHeads(void);
@@ -406,6 +407,9 @@ void headMainMenu(User user) {
     else if (digit == 5)
         deleteLesson();
 
+    else if (digit == 6)
+        headLog(user);
+
     else if (digit == 7)
         editHead(user);
 
@@ -453,11 +457,6 @@ void adminLog(User user) {
     printf("[?] Enter your choice (enter number): ");
     int digit = inputDigit();
 
-    if (digit == 0) {
-        mainMenu(user);
-        exit(0);
-    }
-
     if (digit == 1)
         listHeads();
 
@@ -470,9 +469,36 @@ void adminLog(User user) {
     else if (digit == 4)
         listDeletedStaff();
 
-    printf("\n\nPress any key to continue...");
-    getch();
-    adminLog(user);
+    if (digit != 0) {
+        printf("\n\nPress any key to continue...");
+        getch();
+        adminLog(user);
+    }
+}
+
+void headLog(User user) {
+    system("cls");
+
+    printf("[#] Welcome to department head log menu\n");
+    printf("[#] The available actions here are listed below:\n");
+    printf("\n1. Search for a student\n2. Brief list of students");
+    printf("\n3. Brief list of lessons\n4. list of deleted lessons");
+    printf("\n5. list of enabled lessons\n6. Grades of a specific student");
+    printf("\n7. Grades of students in a specific lesson");
+    printf("\n8. Grades of students in a specific lesson (sorted)");
+    printf("\n9. Average grade of a student\n10. Average grade of a lesson");
+    printf("\n11. List of students sorted by their average grade");
+    printf("\n12. List of students passed a specific lesson");
+    printf("\n13. List of students failed a specific lesson");
+    printf("\n14. List of failed students");
+    printf("\n15. List of failed students that passed a specific lesson");
+    printf("\n\n0. Return to the main menu");
+    printf("\n\n[?] Enter your choice (enter number): ");
+
+    int digit = inputDigit();
+
+    if (digit != 0)
+        headLog(user);
 }
 
 void listUsers(void) {
