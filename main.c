@@ -151,6 +151,8 @@ void listHeads(void);
 void listStaff(void);
 void listStudents(void);
 void listLessons(void);
+void listStudentGrades(void);
+void listLessonGrades(void);
 void listEnabledLessons(void);
 void listDeletedHeads(void);
 void listDeletedStaff(void);
@@ -520,6 +522,12 @@ void headLog(User user) {
     else if (digit == 5)
         listEnabledLessons();
 
+    else if (digit == 6)
+        listStudentGrades();
+
+    else if (digit == 7)
+        listLessonGrades();
+
     if (digit != 0)
         headLog(user);
 }
@@ -734,6 +742,128 @@ void listLessons(void) {
     }
 
     freeLessons(start, end);
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
+void listStudentGrades(void) {
+    struct student *startStu, *currStu, *endStu;
+    getStudents(&startStu, &endStu);
+
+    char stuNum[STUDENT_NUMBER_LEN];
+    printf("[?] Enter student number: ");
+    inputStringNumber(stuNum, STUDENT_NUMBER_LEN);
+
+    currStu = startStu;
+    while (currStu != NULL) {
+        if (strcmp(currStu->studentNumber, stuNum) == 0)
+            break;
+
+        currStu = currStu->next;
+    }
+
+    if (currStu != NULL) {
+        printf("[#] Student found: %s %s\n", currStu->firstName, currStu->lastName);
+        printf("[#] Available grades of the student are listed below:\n");
+
+        struct grade *startGra, *currGra, *endGra;
+        getGrades(&startGra, &endGra);
+
+        struct lesson *startLes, *currLes, *endLes;
+        getLessons(&startLes, &endLes);
+
+        printf("+----+-------------+----------------------+--------+\n");
+        printf("| No | Lesson Code | Lesson name          | Grade  |\n");
+        printf("+----+-------------+----------------------+--------+\n");
+
+        currGra = startGra;
+        int num = 1;
+        while (currGra != NULL) {
+            if (strcmp(currGra->studentNumber, currStu->studentNumber) != 0) {
+                currGra = currGra->next;
+                continue;
+            }
+
+            currLes = getLessonByLessonCode(startLes, endLes, currGra->lessonCode);
+            if (currLes != NULL) {
+                printf("| %-2d | %-11s ", num, currLes->code);
+                printf("| %-20s | %-2.3f |\n", currLes->name, currGra->grade);
+                printf("+----+-------------+----------------------+--------+\n");
+                num++;
+            }
+
+            currGra = currGra->next;
+        }
+
+        freeGrades(startGra, endGra);
+        freeLessons(startLes, endLes);
+    }
+
+    else
+        printf("[!] Student not found");
+
+    freeStudents(startStu, endStu);
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
+void listLessonGrades(void) {
+    struct lesson *startLes, *currLes, *endLes;
+    getLessons(&startLes, &endLes);
+
+    char lessonCode[LESSON_CODE_LEN];
+    printf("[?] Enter lesson code: ");
+    inputStringNumber(lessonCode, LESSON_CODE_LEN);
+
+    currLes = startLes;
+    while (currLes != NULL) {
+        if (strcmp(currLes->code, lessonCode) == 0)
+            break;
+
+        currLes = currLes->next;
+    }
+
+    if (currLes != NULL) {
+        printf("[#] Lesson found: %s", currLes->name);
+        printf("[#] The available grades of the lesson are listed below:\n");
+
+        struct grade *startGra, *currGra, *endGra;
+        getGrades(&startGra, &endGra);
+
+        struct student *startStu, *currStu, *endStu;
+        getStudents(&startStu, &endStu);
+
+        printf("+----+------------+----------------------+----------------------+--------+\n");
+        printf("| No | Student No | First name           | Last name            | Grade  |\n");
+        printf("+----+------------+----------------------+----------------------+--------+\n");
+
+        currGra = startGra;
+        int num = 1;
+        while (currGra != NULL) {
+            if (strcmp(currGra->lessonCode, currLes->code) != 0) {
+                currGra = currGra->next;
+                continue;
+            }
+
+            currStu = getStudentByStudentNumber(startStu, endStu, currGra->studentNumber);
+            if (currStu != NULL) {
+                printf("| %-2d | %-10s ", num, currStu->studentNumber);
+                printf("| %-20s | %-20s ", currStu->firstName, currStu->lastName);
+                printf("| %-2.3f |\n", currGra->grade);
+                printf("+----+------------+----------------------+----------------------+--------+\n");
+                num++;
+            }
+
+            currGra = currGra->next;
+        }
+        freeGrades(startGra, endGra);
+        freeStudents(startStu, endStu);
+    }
+
+    else
+        printf("[!] Lesson not found");
+
+    freeLessons(startLes, endLes);
     printf("\n\nPress any key to continue...");
     getch();
 }
