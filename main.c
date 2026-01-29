@@ -145,6 +145,7 @@ void staffMainMenu(User user);
 void adminLog(User user);
 void headLog(User user);
 
+void searchStudent(void);
 void listUsers(void);
 void listHeads(void);
 void listStaff(void);
@@ -457,6 +458,11 @@ void adminLog(User user) {
     printf("[?] Enter your choice (enter number): ");
     int digit = inputDigit();
 
+    if (digit == 0) {
+        mainMenu(user);
+        exit(0);
+    }
+
     if (digit == 1)
         listHeads();
 
@@ -469,11 +475,9 @@ void adminLog(User user) {
     else if (digit == 4)
         listDeletedStaff();
 
-    if (digit != 0) {
-        printf("\n\nPress any key to continue...");
-        getch();
-        adminLog(user);
-    }
+    printf("\n\nPress any key to continue...");
+    getch();
+    adminLog(user);
 }
 
 void headLog(User user) {
@@ -497,8 +501,67 @@ void headLog(User user) {
 
     int digit = inputDigit();
 
-    if (digit != 0)
-        headLog(user);
+    if (digit == 1)
+        searchStudent();
+
+    headLog(user);
+}
+
+void searchStudent(void) {
+    printf("[#] The available options you can search with is:\n");
+    printf("\n1. First name\n2. Last name\n3. Student number");
+    printf("\n\n0. Return to log menu");
+    printf("\n\n[?] Enter your choice (enter number): ");
+    int digit = inputDigit();
+
+    if (digit <= 3 && digit >= 1) {
+        struct student *start, *curr, *end;
+        getStudents(&start, &end);
+        char input[50];
+        if (digit == 1) {
+            printf("[?] Enter first name: ");
+            inputString(input, MAX_NAME_LEN);
+        }
+        else if (digit == 2) {
+            printf("[?] Enter last name: ");
+            inputString(input, MAX_NAME_LEN);
+        }
+        else {
+            printf("[?] Enter student number: ");
+            inputStringNumber(input, STUDENT_NUMBER_LEN);
+        }
+
+        curr = start;
+        while (curr != NULL) {
+            if (digit == 1 && strcmp(input, curr->firstName) == 0)
+                break;
+
+            if (digit == 2 && strcmp(input, curr->lastName) == 0)
+                break;
+
+            if (digit == 3 && strcmp(input, curr->studentNumber) == 0)
+                break;
+
+            curr = curr->next;
+        }
+
+        if (curr != NULL) {
+            printf("[#] Student found:\n[#] Name: %s %s\n", curr->firstName, curr->lastName);
+            printf("[#] National number: %s\n", curr->nationalNumber);
+            printf("[#] Birth date: %s\n[#] Birth city: %s\n", curr->birthDate, curr->birthCity);
+            printf("[#] Major: %s\n[#] Student number: %s\n", curr->major, curr->studentNumber);
+            printf("[#] Phone number: %s\n[#] Email: %s\n", curr->phoneNumber, curr->email);
+            printf("\n\nPress any key to continue...");
+            getch();
+        }
+        else {
+            printf("[#] No results");
+            Sleep(1000);
+        }
+
+        freeStudents(start, end);
+        searchStudent();
+    }
 }
 
 void listUsers(void) {
