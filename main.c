@@ -149,6 +149,8 @@ void searchStudent(void);
 void listUsers(void);
 void listHeads(void);
 void listStaff(void);
+void listStudents(void);
+void listLessons(void);
 void listDeletedHeads(void);
 void listDeletedStaff(void);
 
@@ -504,7 +506,14 @@ void headLog(User user) {
     if (digit == 1)
         searchStudent();
 
-    headLog(user);
+    else if (digit == 2)
+        listStudents();
+
+    else if (digit == 3)
+        listLessons();
+
+    if (digit != 0)
+        headLog(user);
 }
 
 void searchStudent(void) {
@@ -664,6 +673,61 @@ void listStaff(void) {
     }
 
     freeAcademicStaff(start, end);
+}
+
+void listStudents(void) {
+    struct student *start, *curr, *end;
+    getStudents(&start, &end);
+
+    if (start != NULL) {
+        printf("+----+------------+----------------------+-----------------+-------------+\n");
+        printf("| No | Student No | Last name            | Major           | National No |\n");
+        printf("+----+------------+----------------------+-----------------+-------------+\n");
+    }
+
+    curr = start;
+    int num = 1;
+    while (curr != NULL) {
+        printf("| %-2d | %-10s ", num, curr->studentNumber);
+        printf("| %-20s | %-15s ", curr->lastName, curr->major);
+        printf("| %-10s  |\n", curr->nationalNumber);
+        printf("+----+------------+----------------------+-----------------+-------------+\n");
+
+        curr = curr->next;
+        num++;
+    }
+
+    freeStudents(start, end);
+
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
+void listLessons(void) {
+    struct lesson *start, *curr, *end;
+    getLessons(&start, &end);
+
+    if (start != NULL) {
+        printf("+----+-------+----------------------+----------------------+-------+------------+\n");
+        printf("| No | Code  | Type                 | Name                 | Units | Status     |\n");
+        printf("+----+-------+----------------------+----------------------+-------+------------+\n");
+    }
+
+    int num = 1;
+    curr = start;
+    while (curr != NULL) {
+        printf("| %-2d | %-5s ", num, curr->code);
+        printf("| %-20s | %-20s ", curr->type, curr->name);
+        printf("| %-5d | %-10s |\n", curr->units, curr->status);
+        printf("+----+-------+----------------------+----------------------+-------+------------+\n");
+
+        num++;
+        curr = curr->next;
+    }
+
+    freeLessons(start, end);
+    printf("\n\nPress any key to continue...");
+    getch();
 }
 
 void listDeletedHeads(void) {
