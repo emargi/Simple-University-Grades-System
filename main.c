@@ -151,8 +151,10 @@ void listHeads(void);
 void listStaff(void);
 void listStudents(void);
 void listLessons(void);
+void listEnabledLessons(void);
 void listDeletedHeads(void);
 void listDeletedStaff(void);
+void listDeletedLessons(void);
 
 void addNewHead(void);
 void addNewStaff(void);
@@ -512,6 +514,12 @@ void headLog(User user) {
     else if (digit == 3)
         listLessons();
 
+    else if (digit == 4)
+        listDeletedLessons();
+
+    else if (digit == 5)
+        listEnabledLessons();
+
     if (digit != 0)
         headLog(user);
 }
@@ -708,9 +716,9 @@ void listLessons(void) {
     getLessons(&start, &end);
 
     if (start != NULL) {
-        printf("+----+-------+----------------------+----------------------+-------+------------+\n");
-        printf("| No | Code  | Type                 | Name                 | Units | Status     |\n");
-        printf("+----+-------+----------------------+----------------------+-------+------------+\n");
+        printf("+----+-------+----------------------+----------------------+-------+----------+\n");
+        printf("| No | Code  | Type                 | Name                 | Units | Status   |\n");
+        printf("+----+-------+----------------------+----------------------+-------+----------+\n");
     }
 
     int num = 1;
@@ -718,8 +726,40 @@ void listLessons(void) {
     while (curr != NULL) {
         printf("| %-2d | %-5s ", num, curr->code);
         printf("| %-20s | %-20s ", curr->type, curr->name);
-        printf("| %-5d | %-10s |\n", curr->units, curr->status);
-        printf("+----+-------+----------------------+----------------------+-------+------------+\n");
+        printf("| %-5d | %-8s |\n", curr->units, curr->status);
+        printf("+----+-------+----------------------+----------------------+-------+----------+\n");
+
+        num++;
+        curr = curr->next;
+    }
+
+    freeLessons(start, end);
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
+void listEnabledLessons(void) {
+    struct lesson *start, *curr, *end;
+    getLessons(&start, &end);
+
+    if (start != NULL) {
+        printf("+----+-------+----------------------+----------------------+-------+----------+\n");
+        printf("| No | Code  | Type                 | Name                 | Units | Status   |\n");
+        printf("+----+-------+----------------------+----------------------+-------+----------+\n");
+    }
+
+    int num = 1;
+    curr = start;
+    while (curr != NULL) {
+        if (strcmp(curr->status, "deleted") == 0) {
+            curr = curr->next;
+            continue;
+        }
+
+        printf("| %-2d | %-5s ", num, curr->code);
+        printf("| %-20s | %-20s ", curr->type, curr->name);
+        printf("| %-5d | %-8s |\n", curr->units, curr->status);
+        printf("+----+-------+----------------------+----------------------+-------+----------+\n");
 
         num++;
         curr = curr->next;
@@ -798,6 +838,39 @@ void listDeletedStaff(void) {
         num++;
     }
 }
+
+void listDeletedLessons(void) {
+    struct lesson *start, *curr, *end;
+    getLessons(&start, &end);
+
+    if (start != NULL) {
+        printf("+----+-------+----------------------+----------------------+-------+----------+\n");
+        printf("| No | Code  | Type                 | Name                 | Units | Status   |\n");
+        printf("+----+-------+----------------------+----------------------+-------+----------+\n");
+    }
+
+    int num = 1;
+    curr = start;
+    while (curr != NULL) {
+        if (strcmp(curr->status, "enabled") == 0) {
+            curr = curr->next;
+            continue;
+        }
+
+        printf("| %-2d | %-5s ", num, curr->code);
+        printf("| %-20s | %-20s ", curr->type, curr->name);
+        printf("| %-5d | %-8s |\n", curr->units, curr->status);
+        printf("+----+-------+----------------------+----------------------+-------+----------+\n");
+
+        num++;
+        curr = curr->next;
+    }
+
+    freeLessons(start, end);
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
 void addNewHead() {
     int num;
     printf("[?] Enter the number of department heads you want to add: ");
