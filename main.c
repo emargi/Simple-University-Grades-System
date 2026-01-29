@@ -132,6 +132,8 @@ struct student *getStudentByStudentNumber(struct student *start, struct student 
 struct lesson *getLessonByLessonCode(struct lesson *start, struct lesson *end, char lessonCode[]);
 struct grade *getGradeByLessonCodeAndStudentNumber(struct grade *start, struct grade *end, char lessonCode[], char studentNumber[]);
 
+void sortGradesByStudentLastName(struct grade **startGra, struct grade **endGra, struct student *startStu, struct student *endStu, int numGra);
+
 User loginPanel(void);
 User loginAdmin(void);
 User loginHead(void);
@@ -157,6 +159,7 @@ void listEnabledLessons(void);
 void listDeletedHeads(void);
 void listDeletedStaff(void);
 void listDeletedLessons(void);
+void listLessonGradesSortedByStudentName(void);
 
 void addNewHead(void);
 void addNewStaff(void);
@@ -527,6 +530,9 @@ void headLog(User user) {
 
     else if (digit == 7)
         listLessonGrades();
+
+    else if (digit == 8)
+        listLessonGradesSortedByStudentName();
 
     if (digit != 0)
         headLog(user);
@@ -999,6 +1005,126 @@ void listDeletedLessons(void) {
     freeLessons(start, end);
     printf("\n\nPress any key to continue...");
     getch();
+}
+
+void listLessonGradesSortedByStudentName(void) {
+    char lessonCode[LESSON_CODE_LEN];
+    printf("[?] Enter lesson code: ");
+    inputStringNumber(lessonCode, LESSON_CODE_LEN);
+
+    struct lesson *startLes, *currLes, *endLes;
+    getLessons(&startLes, &endLes);
+
+    currLes = startLes;
+    while (currLes != NULL) {
+        if (strcmp(currLes->code, lessonCode) == 0)
+            break;
+
+        currLes = currLes->next;
+    }
+
+    if (currLes != NULL) {
+        printf("[#] Lesson found: %s\n", currLes->name);
+        printf("[#] Available grades are sorted and listed below:\n");
+
+        struct grade *startGra, *currGra, *endGra;
+        getGrades(&startGra, &endGra);
+
+        struct student *startStu, *currStu, *endStu;
+        getStudents(&startStu, &endStu);
+
+        struct grade *firstGra, *lastGra;
+
+        firstGra = NULL;
+        lastGra = NULL;
+        currGra = startGra;
+        int num = 0;
+        while (currGra != NULL) {
+            if (strcmp(currGra->lessonCode, currLes->code) != 0) {
+                currGra = currGra->next;
+                continue;
+            }
+
+            currStu = getStudentByStudentNumber(startStu, endStu, currGra->studentNumber);
+            if (currStu != NULL) {
+                num++;
+                if (firstGra == NULL) {
+                    firstGra = currGra;
+                    lastGra = firstGra;
+                }
+                else {
+                    lastGra->next = currGra;
+                    lastGra = currGra;
+                }
+            }
+
+            currGra = currGra->next;
+        }
+
+        printf("%d\n", num);
+        sortGradesByStudentLastName(&firstGra, &lastGra, startStu, endStu, num);
+
+        printf("+----+------------+----------------------+----------------------+--------+\n");
+        printf("| No | Student No | First name           | Last name            | Grade  |\n");
+        printf("+----+------------+----------------------+----------------------+--------+\n");
+
+        currGra = firstGra;
+        num = 0;
+        while (currGra != NULL) {
+            num++;
+            currStu = getStudentByStudentNumber(startStu, endStu, currGra->studentNumber);
+            printf("| %-2d | %-10s ", num, currStu->studentNumber);
+            printf("| %-20s | %-20s ", currStu->firstName, currStu->lastName);
+            printf("| %-2.3f |\n", currGra->grade);
+            printf("+----+------------+----------------------+----------------------+--------+\n");
+            currGra = currGra->next;
+        }
+
+        freeStudents(startStu, endStu);
+        freeGrades(startGra, endGra);
+    }
+
+    else
+        printf("[!] Lesson not found");
+
+    freeLessons(startLes, endLes);
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
+void sortGradesByStudentLastName(struct grade **startGra, struct grade **endGra, struct student *startStu, struct student *endStu, int numGra) {
+    struct grade *prev, *curr, *next;
+    struct student *currStu, *nextStu;
+
+    int i;
+    for (i = 0; i < numGra; i++) {
+        prev = NULL;
+        curr = *startGra;
+        while (curr != NULL && curr->next != NULL) {
+            next = curr->next;
+            currStu = getStudentByStudentNumber(startStu, endStu, curr->studentNumber);
+            nextStu = getStudentByStudentNumber(startStu, endStu, next->studentNumber);
+
+            if (stricmp(currStu->lastName, nextStu->lastName) > 0) {
+                if (curr == *startGra)
+                    *startGra = next;
+
+                if (next == *endGra)
+                    *endGra = curr;
+
+                curr->next = next->next;
+                next->next = curr;
+                if (prev != NULL)
+                    prev->next = next;
+
+                prev = next;
+            }
+            else {
+                prev = curr;
+                curr = next;
+            }
+        }
+    }
 }
 
 void addNewHead() {
