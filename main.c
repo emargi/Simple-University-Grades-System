@@ -149,6 +149,7 @@ void headLog(User user);
 
 void searchStudent(void);
 void studentAverageGrade(void);
+void lessonAverageGrade(void);
 void listUsers(void);
 void listHeads(void);
 void listStaff(void);
@@ -509,36 +510,41 @@ void headLog(User user) {
     printf("\n\n0. Return to the main menu");
     printf("\n\n[?] Enter your choice (enter number): ");
 
-    int digit = inputDigit();
+    char strNum[5];
+    inputStringNumber(strNum, 5);
+    int num = atoi(strNum);
 
-    if (digit == 1)
+    if (num == 1)
         searchStudent();
 
-    else if (digit == 2)
+    else if (num == 2)
         listStudents();
 
-    else if (digit == 3)
+    else if (num == 3)
         listLessons();
 
-    else if (digit == 4)
+    else if (num == 4)
         listDeletedLessons();
 
-    else if (digit == 5)
+    else if (num == 5)
         listEnabledLessons();
 
-    else if (digit == 6)
+    else if (num == 6)
         listStudentGrades();
 
-    else if (digit == 7)
+    else if (num == 7)
         listLessonGrades();
 
-    else if (digit == 8)
+    else if (num == 8)
         listLessonGradesSortedByStudentName();
 
-    else if (digit == 9)
+    else if (num == 9)
         studentAverageGrade();
 
-    if (digit != 0)
+    else if (num == 10)
+        lessonAverageGrade();
+
+    if (num != 0)
         headLog(user);
 }
 
@@ -636,7 +642,9 @@ void studentAverageGrade(void) {
 
             currGra = currGra->next;
         }
-        avg /= num;
+
+        if (num != 0)
+            avg /= num;
 
         printf("[#] Student's average grade: %2.3f", avg);
         freeGrades(startGra, endGra);
@@ -645,6 +653,47 @@ void studentAverageGrade(void) {
         printf("[!] Student not found");
 
     freeStudents(startStu, endStu);
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
+void lessonAverageGrade(void) {
+    char lessonCode[LESSON_CODE_LEN];
+    printf("[?] Enter lesson code: ");
+    inputStringNumber(lessonCode, LESSON_CODE_LEN);
+
+    struct lesson *startLes, *currLes, *endLes;
+    getLessons(&startLes, &endLes);
+
+    currLes = getLessonByLessonCode(startLes, endLes, lessonCode);
+    if (currLes != NULL) {
+        printf("[#] Lesson found: %s - %s\n", currLes->type, currLes->name);
+
+        struct grade *start, *curr, *end;
+        getGrades(&start, &end);
+
+        curr = start;
+        int num = 0;
+        float avg = 0;
+        while (curr != NULL) {
+            if (strcmp(curr->lessonCode, currLes->code) == 0) {
+                avg += curr->grade;
+                num++;
+            }
+
+            curr = curr->next;
+        }
+
+        if (num != 0)
+            avg /= num;
+
+        printf("[#] Lesson's average grade: %2.3f", avg);
+        freeGrades(start, end);
+    }
+    else
+        printf("[!] Lesson not found");
+
+    freeLessons(startLes, endLes);
     printf("\n\nPress any key to continue...");
     getch();
 }
