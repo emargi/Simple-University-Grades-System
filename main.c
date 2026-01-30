@@ -160,6 +160,7 @@ void listStaff(void);
 void listStudents(void);
 void listLessons(void);
 void listStudentGrades(void);
+void listFailingStudents(void);
 void listStudentsPassingLesson(void);
 void listStudentsFailingLesson(void);
 void listLessonGrades(void);
@@ -560,6 +561,9 @@ void headLog(User user) {
     else if (num == 13)
         listStudentsFailingLesson();
 
+    else if (num == 14)
+        listFailingStudents();
+
     if (num != 0)
         headLog(user);
 }
@@ -903,6 +907,40 @@ void listStudentGrades(void) {
         printf("[!] Student not found");
 
     freeStudents(startStu, endStu);
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
+void listFailingStudents(void) {
+    struct student *startStu, *currStu, *endStu;
+    getStudents(&startStu, &endStu);
+
+    struct grade *startGra, *endGra;
+    getGrades(&startGra, &endGra);
+
+    printf("+----+------------+----------------------+----------------------+-----------+\n");
+    printf("| No | Student No | First name           | Last name            | Avg grade |\n");
+    printf("+----+------------+----------------------+----------------------+-----------+\n");
+
+    currStu = startStu;
+    int num = 0;
+    while (currStu != NULL) {
+        float avg;
+        avg = getAverageGradeByStudentNumber(startGra, endGra, currStu->studentNumber);
+
+        if (avg < PASSING_GRADE) {
+            num++;
+            printf("| %-2d | %-10s ", num, currStu->studentNumber);
+            printf("| %-20s | %-20s ", currStu->firstName, currStu->lastName);
+            printf("| %-2.3f    |\n", avg);
+            printf("+----+------------+----------------------+----------------------+-----------+\n");
+        }
+
+        currStu = currStu->next;
+    }
+
+    freeStudents(startStu, endStu);
+    freeGrades(startGra, endGra);
     printf("\n\nPress any key to continue...");
     getch();
 }
