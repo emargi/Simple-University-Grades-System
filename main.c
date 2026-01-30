@@ -148,6 +148,7 @@ void adminLog(User user);
 void headLog(User user);
 
 void searchStudent(void);
+void studentAverageGrade(void);
 void listUsers(void);
 void listHeads(void);
 void listStaff(void);
@@ -498,7 +499,7 @@ void headLog(User user) {
     printf("\n3. Brief list of lessons\n4. list of deleted lessons");
     printf("\n5. list of enabled lessons\n6. Grades of a specific student");
     printf("\n7. Grades of students in a specific lesson");
-    printf("\n8. Grades of students in a specific lesson (sorted)");
+    printf("\n8. Grades of students in a specific lesson (sorted by last name)");
     printf("\n9. Average grade of a student\n10. Average grade of a lesson");
     printf("\n11. List of students sorted by their average grade");
     printf("\n12. List of students passed a specific lesson");
@@ -533,6 +534,9 @@ void headLog(User user) {
 
     else if (digit == 8)
         listLessonGradesSortedByStudentName();
+
+    else if (digit == 9)
+        studentAverageGrade();
 
     if (digit != 0)
         headLog(user);
@@ -603,6 +607,44 @@ void listUsers(void) {
     printf("\n");
     listStaff();
 
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
+void studentAverageGrade(void) {
+    char stuNum[STUDENT_NUMBER_LEN];
+    printf("[?] Enter student number: ");
+    inputStringNumber(stuNum, STUDENT_NUMBER_LEN);
+
+    struct student *startStu, *currStu, *endStu;
+    getStudents(&startStu, &endStu);
+
+    currStu = getStudentByStudentNumber(startStu, endStu, stuNum);
+    if (currStu != NULL) {
+        printf("[#] Student found: %s %s\n", currStu->firstName, currStu->lastName);
+        struct grade *startGra, *currGra, *endGra;
+        getGrades(&startGra, &endGra);
+
+        currGra = startGra;
+        int num = 0;
+        float avg = 0;
+        while (currGra != NULL) {
+            if (strcmp(currGra->studentNumber, currStu->studentNumber) == 0) {
+                avg += currGra->grade;
+                num++;
+            }
+
+            currGra = currGra->next;
+        }
+        avg /= num;
+
+        printf("[#] Student's average grade: %2.3f", avg);
+        freeGrades(startGra, endGra);
+    }
+    else
+        printf("[!] Student not found");
+
+    freeStudents(startStu, endStu);
     printf("\n\nPress any key to continue...");
     getch();
 }
