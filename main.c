@@ -131,8 +131,11 @@ struct academicStaff *getStaffByUsername(struct academicStaff *start, struct aca
 struct student *getStudentByStudentNumber(struct student *start, struct student *end, char studentNumber[]);
 struct lesson *getLessonByLessonCode(struct lesson *start, struct lesson *end, char lessonCode[]);
 struct grade *getGradeByLessonCodeAndStudentNumber(struct grade *start, struct grade *end, char lessonCode[], char studentNumber[]);
+float getAverageGradeByStudentNumber(struct grade *start, struct grade *end, char studentNumber[]);
 
+void sortStudentsByAverageGrade(struct student **startStu, struct student **endStu, struct grade *startGra, struct grade *endGra, int numStu);
 void sortGradesByStudentLastName(struct grade **startGra, struct grade **endGra, struct student *startStu, struct student *endStu, int numGra);
+
 
 User loginPanel(void);
 User loginAdmin(void);
@@ -161,6 +164,7 @@ void listEnabledLessons(void);
 void listDeletedHeads(void);
 void listDeletedStaff(void);
 void listDeletedLessons(void);
+void listStudentsSortedByAverageGrade(void);
 void listLessonGradesSortedByStudentName(void);
 
 void addNewHead(void);
@@ -544,6 +548,9 @@ void headLog(User user) {
     else if (num == 10)
         lessonAverageGrade();
 
+    else if (num == 11)
+        listStudentsSortedByAverageGrade();
+
     if (num != 0)
         headLog(user);
 }
@@ -630,21 +637,8 @@ void studentAverageGrade(void) {
         printf("[#] Student found: %s %s\n", currStu->firstName, currStu->lastName);
         struct grade *startGra, *currGra, *endGra;
         getGrades(&startGra, &endGra);
-
-        currGra = startGra;
-        int num = 0;
-        float avg = 0;
-        while (currGra != NULL) {
-            if (strcmp(currGra->studentNumber, currStu->studentNumber) == 0) {
-                avg += currGra->grade;
-                num++;
-            }
-
-            currGra = currGra->next;
-        }
-
-        if (num != 0)
-            avg /= num;
+        float avg;
+        avg = getAverageGradeByStudentNumber(startGra, endGra, currStu->studentNumber);
 
         printf("[#] Student's average grade: %2.3f", avg);
         freeGrades(startGra, endGra);
@@ -1098,6 +1092,49 @@ void listDeletedLessons(void) {
     getch();
 }
 
+void listStudentsSortedByAverageGrade(void) {
+    struct student *startStu, *currStu, *endStu;
+    getStudents(&startStu, &endStu);
+
+    struct grade *startGra, *currGra, *endGra;
+    getGrades(&startGra, &endGra);
+
+    int numStu = 0;
+    currStu = startStu;
+    while (currStu != NULL) {
+        numStu++;
+        currStu = currStu->next;
+    }
+
+    sortStudentsByAverageGrade(&startStu, &endStu, startGra, endGra, numStu);
+
+    if (startStu != NULL) {
+        printf("+----+------------+----------------------+----------------------+-----------+\n");
+        printf("| No | Student No | First name           | Last name            | Avg Grade |\n");
+        printf("+----+------------+----------------------+----------------------+-----------+\n");
+    }
+
+    currStu = startStu;
+    int num = 0;
+    while (currStu != NULL) {
+        num++;
+        float avg;
+        avg = getAverageGradeByStudentNumber(startGra, endGra, currStu->studentNumber);
+
+        printf("| %-2d | %-10s ", num, currStu->studentNumber);
+        printf("| %-20s | %-20s ", currStu->firstName, currStu->lastName);
+        printf("| %-2.3f    |\n", avg);
+        printf("+----+------------+----------------------+----------------------+-----------+\n");
+
+        currStu = currStu->next;
+    }
+
+    freeStudents(startStu, endStu);
+    freeGrades(startGra, endGra);
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
 void listLessonGradesSortedByStudentName(void) {
     char lessonCode[LESSON_CODE_LEN];
     printf("[?] Enter lesson code: ");
@@ -1181,6 +1218,41 @@ void listLessonGradesSortedByStudentName(void) {
     freeLessons(startLes, endLes);
     printf("\n\nPress any key to continue...");
     getch();
+}
+
+void sortStudentsByAverageGrade(struct student **startStu, struct student **endStu, struct grade *startGra, struct grade *endGra, int numStu) {
+    struct student *prev, *curr, *next;
+
+    int i;
+    for (i = 0; i < numStu; i++) {
+        prev = NULL;
+        curr = *startStu;
+        while (curr != NULL && curr->next != NULL) {
+            next = curr->next;
+            float currAvg;
+            currAvg = getAverageGradeByStudentNumber(startGra, endGra, curr->studentNumber);
+            float nextAvg;
+            nextAvg = getAverageGradeByStudentNumber(startGra, endGra, next->studentNumber);
+
+            if (currAvg > nextAvg) {
+                if (curr == *startStu)
+                    *startStu = next;
+                if (next == *endStu)
+                    *endStu = curr;
+
+                curr->next = next->next;
+                next->next = curr;
+                if (prev != NULL)
+                    prev->next = next;
+
+                prev = next;
+            }
+            else {
+                prev = curr;
+                curr = next;
+            }
+        }
+    }
 }
 
 void sortGradesByStudentLastName(struct grade **startGra, struct grade **endGra, struct student *startStu, struct student *endStu, int numGra) {
@@ -2649,6 +2721,26 @@ struct grade *getGradeByLessonCodeAndStudentNumber(struct grade *start, struct g
     }
 
     return curr;
+}
+
+float getAverageGradeByStudentNumber(struct grade *start, struct grade *end, char studentNumber[]) {
+    struct grade *curr;
+    curr = start;
+    int num = 0;
+    float avg = 0;
+    while (curr != NULL) {
+        if (strcmp(curr->studentNumber, studentNumber) == 0) {
+            avg += curr->grade;
+            num++;
+        }
+
+        curr = curr->next;
+    }
+
+    if (num != 0)
+        avg /= num;
+
+    return avg;
 }
 
 void freeGrades(struct grade *start, struct grade *end) {
