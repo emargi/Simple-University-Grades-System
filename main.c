@@ -150,6 +150,7 @@ void staffMainMenu(User user);
 
 void adminLog(User user);
 void headLog(User user);
+void staffLog(User user);
 
 void searchStudent(void);
 void studentAverageGrade(void);
@@ -460,6 +461,9 @@ void staffMainMenu(User user) {
     else if (digit == 3)
         addNewGrade(user);
 
+    else if (digit == 4)
+        staffLog(user);
+
     else if (digit == 5)
         editStaff(user);
 
@@ -570,6 +574,25 @@ void headLog(User user) {
 
     if (num != 0)
         headLog(user);
+}
+
+void staffLog(User user) {
+    system("cls");
+
+    printf("[#] Welcome to your log menu\n");
+    printf("[#] The available actions here are listed below:\n");
+    printf("\n1. Search for a student\n2. List of students born in a specific period of time");
+    printf("\n3. List of students of a specific major\n4. List of students born in a specific city");
+    printf("\n\n0. Return to the main menu\n\n");
+    printf("[?] Enter your choice (enter number): ");
+
+    int digit = inputDigit();
+
+    if (digit == 1)
+        searchStudent();
+
+    if (digit != 0)
+        staffLog(user);
 }
 
 void searchStudent(void) {
