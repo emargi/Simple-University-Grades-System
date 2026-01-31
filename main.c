@@ -111,6 +111,7 @@ int validatePhoneNumber(char phoneNumber[]);
 int validateEmail(char email[]);
 
 void removeNewLine(char str[]);
+void extractDateInfo(char date[], int *year, int *month, int *day);
 
 void getDepartmentHeads(struct departmentHead **start, struct departmentHead **end);
 void setDepartmentHeads(struct departmentHead **start, struct departmentHead **end);
@@ -164,6 +165,7 @@ void listStudentGrades(void);
 void listFailingStudents(void);
 void listStudentsPassingLesson(void);
 void listStudentsFailingLesson(void);
+void listStudentsBornInTimePeriod(void);
 void listFailingStudentsStudiedLesson(void);
 void listLessonGrades(void);
 void listEnabledLessons(void);
@@ -590,6 +592,9 @@ void staffLog(User user) {
 
     if (digit == 1)
         searchStudent();
+
+    else if (digit == 2)
+        listStudentsBornInTimePeriod();
 
     if (digit != 0)
         staffLog(user);
@@ -1066,6 +1071,49 @@ void listStudentsFailingLesson(void) {
         printf("[!] Lesson not found");
 
     freeLessons(startLes, endLes);
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
+void listStudentsBornInTimePeriod(void) {
+    char strDate1[DATE_LEN];
+    char strDate2[DATE_LEN];
+
+    printf("[?] Enter first date (sample: 1404/01/01): ");
+    inputString(strDate1, DATE_LEN);
+    printf("[?] Enter second date (sample: 1404/01/01): ");
+    inputString(strDate2, DATE_LEN);
+
+    int year1, year2, month1, month2, day1, day2;
+    extractDateInfo(strDate1, &year1, &month1, &day1);
+    extractDateInfo(strDate2, &year2, &month2, &day2);
+
+    struct student *start, *curr, *end;
+    getStudents(&start, &end);
+
+    curr = start;
+    int num = 0;
+    while (curr != NULL) {
+        int year, month, day;
+        extractDateInfo(curr->birthDate, &year, &month, &day);
+
+        if (year >= year1 && year <= year2 && month >= month1 && month <= month2
+            && day >= day1 && day <= day2) {
+                num++;
+                printf("\n[#] Index: %d\n", num);
+                printf("[#] Name: %s %s\n", curr->firstName, curr->lastName);
+                printf("[#] Major: %s\n", curr->major);
+                printf("[#] Student Number: %s\n", curr->studentNumber);
+                printf("[#] National number: %s\n", curr->nationalNumber);
+                printf("[#] Birth date: %s\n", curr->birthDate);
+                printf("[#] Birth city: %s\n", curr->birthCity);
+                printf("[#] Email: %s\n", curr->email);
+                printf("[#] Phone number: %s\n", curr->phoneNumber);
+        }
+        curr = curr->next;
+    }
+
+    freeStudents(start, end);
     printf("\n\nPress any key to continue...");
     getch();
 }
@@ -3159,4 +3207,21 @@ void removeNewLine(char str[]) {
     int len = strlen(str);
     if (str[len-1] == '\n')
         str[len-1] = '\0';
+}
+
+void extractDateInfo(char date[], int *year, int *month, int *day) {
+    int i = 0;
+    *year = 0;
+    for (; date[i] != '/'; i++)
+        *year = *year * 10 + (date[i] - '0');
+
+    i++;
+    *month = 0;
+    for(; date[i] != '/'; i++)
+        *month = *month * 10 + (date[i] - '0');
+
+    i++;
+    *day = 0;
+    for(; date[i] != '\0'; i++)
+        *day = *day * 10 + (date[i] - '0');
 }
