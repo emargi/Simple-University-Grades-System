@@ -166,6 +166,8 @@ void listFailingStudents(void);
 void listStudentsPassingLesson(void);
 void listStudentsFailingLesson(void);
 void listStudentsBornInTimePeriod(void);
+void listStudentsOfMajor(void);
+void listStudentsBornInCity(void);
 void listFailingStudentsStudiedLesson(void);
 void listLessonGrades(void);
 void listEnabledLessons(void);
@@ -595,6 +597,12 @@ void staffLog(User user) {
 
     else if (digit == 2)
         listStudentsBornInTimePeriod();
+
+    else if (digit == 3)
+        listStudentsOfMajor();
+
+    else if (digit == 4)
+        listStudentsBornInCity();
 
     if (digit != 0)
         staffLog(user);
@@ -1110,6 +1118,70 @@ void listStudentsBornInTimePeriod(void) {
                 printf("[#] Email: %s\n", curr->email);
                 printf("[#] Phone number: %s\n", curr->phoneNumber);
         }
+        curr = curr->next;
+    }
+
+    freeStudents(start, end);
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
+void listStudentsOfMajor(void) {
+    char major[MAX_NAME_LEN];
+    printf("[?] Enter major: ");
+    inputString(major, MAX_NAME_LEN);
+
+    struct student *start, *curr, *end;
+    getStudents(&start, &end);
+
+    curr = start;
+    int num = 0;
+    while (curr != NULL) {
+        if (strcmp(curr->major, major) == 0) {
+            num++;
+            printf("\n[#] Index: %d\n", num);
+            printf("[#] Name: %s %s\n", curr->firstName, curr->lastName);
+            printf("[#] Major: %s\n", curr->major);
+            printf("[#] Student Number: %s\n", curr->studentNumber);
+            printf("[#] National number: %s\n", curr->nationalNumber);
+            printf("[#] Birth date: %s\n", curr->birthDate);
+            printf("[#] Birth city: %s\n", curr->birthCity);
+            printf("[#] Email: %s\n", curr->email);
+            printf("[#] Phone number: %s\n", curr->phoneNumber);
+        }
+
+        curr = curr->next;
+    }
+
+    freeStudents(start, end);
+    printf("\n\nPress any key to continue...");
+    getch();
+}
+
+void listStudentsBornInCity(void) {
+    char city[MAX_NAME_LEN];
+    printf("[?] Enter city: ");
+    inputString(city, MAX_NAME_LEN);
+
+    struct student *start, *curr, *end;
+    getStudents(&start, &end);
+
+    curr = start;
+    int num = 0;
+    while (curr != NULL) {
+        if (strcmp(curr->birthCity, city) == 0) {
+            num++;
+            printf("\n[#] Index: %d\n", num);
+            printf("[#] Name: %s %s\n", curr->firstName, curr->lastName);
+            printf("[#] Major: %s\n", curr->major);
+            printf("[#] Student Number: %s\n", curr->studentNumber);
+            printf("[#] National number: %s\n", curr->nationalNumber);
+            printf("[#] Birth date: %s\n", curr->birthDate);
+            printf("[#] Birth city: %s\n", curr->birthCity);
+            printf("[#] Email: %s\n", curr->email);
+            printf("[#] Phone number: %s\n", curr->phoneNumber);
+        }
+
         curr = curr->next;
     }
 
