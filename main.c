@@ -3395,6 +3395,48 @@ int validatePhoneNumber(char phoneNumber[]) {
 }
 
 int validateEmail(char email[]) {
+    int len = strlen(email);
+    int i;
+    int at = 0;
+    int dot = 0;
+    for (i = 0; i < len; i++) {
+        char ch = email[i];
+        if (!isalnum(ch) && ch != '@' && ch != '.' && ch != '_' && ch != '-')
+            return 0;
+
+        if (ch == '@')
+            at++;
+
+        if (ch == '.')
+            dot++;
+    }
+
+    if (at != 1)
+        return 0;
+
+    if (dot < 1)
+        return 0;
+
+    for (i = 0; email[i] != '@'; i++);
+
+    if (len - i < 3)
+        return 0;
+
+    i++;
+    if (!isalnum(email[i]))
+        return 0;
+
+    for (; i < len; i++) {
+        char ch = email[i];
+        if (i == len - 1 && ch == '.')
+            return 0;
+
+        if (ch == '.') {
+            if (email[i+1] == '.')
+                return 0;
+        }
+    }
+
     return 1;
 }
 
