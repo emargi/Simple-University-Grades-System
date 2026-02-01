@@ -20,6 +20,8 @@
 #define LESSON_CODE_LEN 7
 #define STUDENT_NUMBER_LEN 12
 #define PASSING_GRADE 10
+#define MAX_GRADE 20
+#define MIN_GRADE 0
 
 #define HEAD_PROFILES_FILE "department_head_profiles.txt"
 #define STAFF_PROFILES_FILE "academic_staff_profiles.txt"
@@ -197,9 +199,6 @@ void deleteLesson(void);
 
 // main function
 void main() {
-    printf("Welcome to Student Management System");
-    Sleep(1000);
-
     User user = loginPanel();
     mainMenu(user);
 }
@@ -208,18 +207,14 @@ void main() {
 User loginPanel(void) {
     system("cls");
 
+    printf("[#] Welcome to Student Management System");
     printf("[#] To use this program, you should first login to your account\n");
-    int choice = -1;
-    do {
-        printf("[#] The available roles to login as are listed below\n");
-        printf("\n1. Admin\n2. Deparment Head\n3. Academic Staff\n\n0. Exit");
-        printf("\n\n[?] Enter your choice (enter number): ");
+    printf("[#] The available roles to login as are listed below\n");
+    printf("\n1. Admin\n2. Deparment Head\n3. Academic Staff\n\n0. Exit");
+    printf("\n\n[?] Enter your choice (enter number): ");
 
-        choice = inputDigit();
-        printf("\n");
-        if (choice < 0 || choice > 3)
-            printf("[Error] Wrong number. Try again\n");
-    } while (choice < 0 || choice > 3);
+    int choice = inputDigit();
+    printf("\n");
 
     if (choice == 0)
         exit(1);
@@ -230,31 +225,25 @@ User loginPanel(void) {
     if (choice == 2)
         return loginHead();
 
-    return loginStaff();
+    if (choice == 3)
+        return loginStaff();
+
+    return loginPanel();
 }
 
 User loginAdmin(void) {
     char username[MAX_USERNAME_LEN];
+    char password[MAX_PASSWORD_LEN];
     int askAgain = 0;
 
     do {
         printf("[?] Enter your username: ");
         inputString(username, MAX_USERNAME_LEN);
-        if (strcmp(username, "admin") != 0) {
-            printf("[!] Username not found. Try again\n");
-            askAgain = 1;
-        }
-        else {
-            askAgain = 0;
-        }
-    } while (askAgain);
-
-    char password[MAX_PASSWORD_LEN];
-    do {
-        printf("[?] Enter your password: ");
+        printf("[?] Enter password: ");
         inputPassword(password, MAX_PASSWORD_LEN);
-        if (strcmp(password, "admin") != 0) {
-            printf("[!] Wrong password. Try again\n");
+
+        if (strcmp(username, "admin") != 0 || strcmp(password, "admin") != 0) {
+            printf("[!] Wrong information. Try again\n");
             askAgain = 1;
         }
         else {
@@ -1633,9 +1622,11 @@ void sortGradesByStudentLastName(struct grade **startGra, struct grade **endGra,
 }
 
 void addNewHead() {
+    char strNum[5];
     int num;
     printf("[?] Enter the number of department heads you want to add: ");
-    scanf("%d", &num);
+    inputStringNumber(strNum, 5);
+    num = atoi(strNum);
 
     int i;
     struct departmentHead *newHead, *curr, *lastHead;
@@ -1651,57 +1642,49 @@ void addNewHead() {
     
         printf("[?] Enter last name: ");
         inputString(curr->lastName, MAX_NAME_LEN);
-    
+
         printf("[?] Enter group name: ");
         inputString(curr->groupName, MAX_NAME_LEN);
     
         int correct;
-        char date[DATE_LEN];
         do {
             printf("[?] Enter join date (sample: 2026/01/01): ");
-            inputString(date, DATE_LEN);
-            correct = validateDate(date);
+            inputString(curr->joinDate, DATE_LEN);
+            correct = validateDate(curr->joinDate);
             if (!correct)
                 printf("[!] Wrong date format. Try again\n");
         } while (!correct);
-        strcpy(curr->joinDate, date);
-    
-        char nationalNumber[NATIONAL_NUMBER_LEN];
+
         do {
             printf("[?] Enter national number: ");
-            inputStringNumber(nationalNumber, NATIONAL_NUMBER_LEN);
-            if (strlen(nationalNumber) != NATIONAL_NUMBER_LEN - 2) {
+            inputStringNumber(curr->nationalNumber, NATIONAL_NUMBER_LEN);
+            if (strlen(curr->nationalNumber) != NATIONAL_NUMBER_LEN - 2) {
                 printf("[!] Wrong national number. Try again\n");
                 correct = 0;
             }
             else
                 correct = 1;
         } while (!correct);
-        strcpy(curr->nationalNumber, nationalNumber);
-    
-        char phoneNumber[PHONE_NUMBER_LEN];
+
         do {
             printf("[?] Enter phone number (sample: 09123456789): ");
-            inputStringNumber(phoneNumber, PHONE_NUMBER_LEN);
-            correct = validatePhoneNumber(phoneNumber);
+            inputStringNumber(curr->phoneNumber, PHONE_NUMBER_LEN);
+            correct = validatePhoneNumber(curr->phoneNumber);
             if (!correct)
                 printf("[!] Wrong phone number. Try again\n");
         } while (!correct);
-        strcpy(curr->phoneNumber, phoneNumber);
-    
-        char email[MAX_EMAIL_LEN];
+
         do {
             printf("[?] Enter email (sample: admin@yahoo.com): ");
-            inputString(email, MAX_EMAIL_LEN);
-            correct = validateEmail(email);
+            inputString(curr->email, MAX_EMAIL_LEN);
+            correct = validateEmail(curr->email);
             if (!correct)
                 printf("[!] Wrong email. Try again\n");
         } while (!correct);
-        strcpy(curr->email, email);
-    
+
         printf("[?] Enter username: ");
         inputUsername(curr->username, MAX_USERNAME_LEN);
-    
+
         int same;
         char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
         do {
@@ -1752,10 +1735,12 @@ void addNewHead() {
 }
 
 void addNewStaff(void) {
+    char strNum[5];
     int num;
     printf("[?] Enter the number of academic staff you want to add: ");
-    scanf("%d", &num);
-    
+    inputStringNumber(strNum, 5);
+    num = atoi(strNum);
+
     int i;
     struct academicStaff *newStaff, *curr, *lastStaff;
     newStaff = NULL;
@@ -1771,44 +1756,38 @@ void addNewStaff(void) {
         inputString(curr->lastName, MAX_NAME_LEN);
         
         int correct;
-        char date[DATE_LEN];
         do {
             printf("[?] Enter the date of join (sample: 2026/01/01): ");
-            inputString(date, DATE_LEN);
-            correct = validateDate(date);
+            inputString(curr->joinDate, DATE_LEN);
+            correct = validateDate(curr->joinDate);
             if (!correct)
             printf("[!] Wrong date. Try again\n");
         } while (!correct);
-        strcpy(curr->joinDate, date);
-        
+
         char strNumber[10];
         printf("[?] Enter rank: ");
         inputStringNumber(strNumber, 10);
         curr->rank = atoi(strNumber);
-        
-        char phoneNumber[PHONE_NUMBER_LEN];
+
         do {
             printf("[?] Enter phone number (sample: 09123456789): ");
-            inputStringNumber(phoneNumber, PHONE_NUMBER_LEN);
-            correct = validatePhoneNumber(phoneNumber);
+            inputStringNumber(curr->phoneNumber, PHONE_NUMBER_LEN);
+            correct = validatePhoneNumber(curr->phoneNumber);
             if (!correct)
             printf("[!] Wrong phone number format. Try again\n");
         } while (!correct);
-        strcpy(curr->phoneNumber, phoneNumber);
-        
-        char email[MAX_EMAIL_LEN];
+
         do {
             printf("[?] Enter email (sample: test@yahoo.com): ");
-            inputString(email, MAX_EMAIL_LEN);
-            correct = validateEmail(email);
+            inputString(curr->email, MAX_EMAIL_LEN);
+            correct = validateEmail(curr->email);
             if (!correct)
             printf("[!] Wrong email. Try again\n");
         } while (!correct);
-        strcpy(curr->email, email);
-        
+
         printf("[?] Enter username: ");
         inputUsername(curr->username, MAX_USERNAME_LEN);
-        
+
         char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
         do {
             printf("[?] Enter password: ");
@@ -1824,11 +1803,11 @@ void addNewStaff(void) {
             }
         } while (!correct);
         strcpy(curr->password, password1);
-        
+
         strcpy(curr->status, "enabled");
-        
+
         curr->next = NULL;
-        
+
         if (newStaff == NULL) {
             newStaff = curr;
             lastStaff = newStaff;
@@ -1838,7 +1817,7 @@ void addNewStaff(void) {
             lastStaff = curr;
         }
     }
-    
+
     struct academicStaff *start, *end;
     getAcademicStaff(&start, &end);
     if (start == NULL) {
@@ -1849,10 +1828,10 @@ void addNewStaff(void) {
         end->next = newStaff;
         end = lastStaff;
     }
-    
+
     setAcademicStaff(&start, &end);
     freeAcademicStaff(start, end);
-    
+
     printf("\n[#] New academic staff added");
     Sleep(1000);
 }
@@ -1877,11 +1856,25 @@ void addNewStudent(void) {
         printf("[?] Enter last name: ");
         inputString(curr->lastName, MAX_NAME_LEN);
 
-        printf("[?] Enter national number: ");
-        inputStringNumber(curr->nationalNumber, NATIONAL_NUMBER_LEN);
+        int isCorrect;
+        do {
+            printf("[?] Enter national number: ");
+            inputStringNumber(curr->nationalNumber, NATIONAL_NUMBER_LEN);
+            if (strlen(curr->nationalNumber) != NATIONAL_NUMBER_LEN - 2) {
+                printf("[!] Wrong national number. Try again\n");
+                isCorrect = 0;
+            }
+            else
+                isCorrect = 1;
+        } while (!isCorrect);
 
-        printf("[?] Enter birth date: ");
-        inputString(curr->birthDate, DATE_LEN);
+        do {
+            printf("[?] Enter birth date: ");
+            inputString(curr->birthDate, DATE_LEN);
+            isCorrect = validateDate(curr->birthDate);
+            if (!isCorrect)
+                printf("[!] Wrong date format. Try again\n");
+        } while (!isCorrect);
 
         printf("[?] Enter birth city name: ");
         inputString(curr->birthCity, MAX_NAME_LEN);
@@ -1889,14 +1882,32 @@ void addNewStudent(void) {
         printf("[?] Enter major: ");
         inputString(curr->major, MAX_NAME_LEN);
 
-        printf("[?] Enter student number: ");
-        inputStringNumber(curr->studentNumber, MAX_NAME_LEN);
+        do {
+            printf("[?] Enter student number: ");
+            inputStringNumber(curr->studentNumber, MAX_NAME_LEN);
+            if (strlen(curr->studentNumber) != STUDENT_NUMBER_LEN - 2) {
+                printf("[!] Wrong student number. Try again\n");
+                isCorrect = 0;
+            }
+            else
+                isCorrect = 1;
+        } while (!isCorrect);
 
-        printf("[?] Enter phone number: ");
-        inputStringNumber(curr->phoneNumber, PHONE_NUMBER_LEN);
+        do {
+            printf("[?] Enter phone number: ");
+            inputStringNumber(curr->phoneNumber, PHONE_NUMBER_LEN);
+            isCorrect = validatePhoneNumber(curr->phoneNumber);
+            if (!isCorrect)
+                printf("[!] Wrong phone number. Try again\n");
+        } while (!isCorrect);
 
-        printf("[?] Enter email: ");
-        inputString(curr->email, MAX_EMAIL_LEN);
+        do {
+            printf("[?] Enter email: ");
+            inputString(curr->email, MAX_EMAIL_LEN);
+            isCorrect = validateEmail(curr->email);
+            if (!isCorrect)
+                printf("[!] Wrong email format. Try again\n");
+        } while (!isCorrect);
 
         curr->next = NULL;
         if (first == NULL) {
@@ -1928,9 +1939,11 @@ void addNewStudent(void) {
 }
 
 void addNewLesson(void) {
+    char strNum[5];
     int num;
     printf("\n[?] How many lessons do you want to add (enter number): ");
-    scanf("%d", &num);
+    inputStringNumber(strNum, 5);
+    num = atoi(strNum);
 
     struct lesson *start, *curr, *end;
     start = NULL;
@@ -2003,13 +2016,41 @@ void addNewGrade(User user) {
         printf("[?] Enter lesson code: ");
         inputStringNumber(curr->lessonCode, LESSON_CODE_LEN);
 
-        printf("[?] Enter student number: ");
-        inputStringNumber(curr->studentNumber, STUDENT_NUMBER_LEN);
+        int isCorrect;
+        do {
+            printf("[?] Enter student number: ");
+            inputStringNumber(curr->studentNumber, STUDENT_NUMBER_LEN);
+            if (strlen(curr->studentNumber) != STUDENT_NUMBER_LEN - 2) {
+                printf("[!] Wrong student number. Try again\n");
+                isCorrect = 0;
+            }
+            else
+                isCorrect = 1;
+        } while (!isCorrect);
+
+        struct grade *temp;
+        temp = getGradeByLessonCodeAndStudentNumber(first, last, curr->lessonCode, curr->studentNumber);
+        if (temp != NULL) {
+            printf("[!] There's already a grade stored for this student in this lesson.");
+            printf("Try again\n\n");
+            free(curr);
+            temp = NULL;
+            curr = NULL;
+            continue;
+        }
 
         char strNumber[10];
-        printf("[?] Enter grade: ");
-        inputStringFloat(strNumber, 10);
-        curr->grade = atof(strNumber);
+        do {
+            printf("[?] Enter grade (0-20): ");
+            inputStringFloat(strNumber, 10);
+            curr->grade = atof(strNumber);
+            if (curr->grade < MIN_GRADE || curr->grade > MAX_GRADE) {
+                printf("[!] Wrong grade. Try again\n");
+                isCorrect = 0;
+            }
+            else
+                isCorrect = 1;
+        } while (!isCorrect);
 
         strcpy(curr->username, user.username);
         curr->time = time(NULL);
@@ -2111,9 +2152,14 @@ void editGrade(void) {
         char strNumber[10];
         printf("[?] Enter new grade: ");
         inputStringFloat(strNumber, 10);
-        curr->grade = atof(strNumber);
-        setGrades(start, end);
-        printf("[#] Grade changed");
+        float tempGrade = atof(strNumber);
+        if (tempGrade < MIN_GRADE || tempGrade > MAX_GRADE)
+            printf("[!] Wrong grade. grade not changed");
+        else {
+            curr->grade = tempGrade;
+            setGrades(start, end);
+            printf("[#] Grade changed");
+        }
         Sleep(1000);
     }
 
@@ -2173,17 +2219,29 @@ void editHead(User user) {
         Sleep(1000);
     }
     else if (digit == 2) {
+        char tempEmail[MAX_EMAIL_LEN];
         printf("[?] Enter new email: ");
-        inputString(head->email, MAX_EMAIL_LEN);
-        setDepartmentHeads(&start, &end);
-        printf("[#] Email changed");
+        inputString(tempEmail, MAX_EMAIL_LEN);
+        if (!validateEmail(tempEmail))
+            printf("[!] Wrong email format. email not changed");
+        else {
+            strcpy(head->email, tempEmail);
+            setDepartmentHeads(&start, &end);
+            printf("[#] Email changed");
+        }
         Sleep(1000);
     }
     else if (digit == 3) {
+        char tempPhoneNumber[PHONE_NUMBER_LEN];
         printf("[?] Enter new phone number: ");
-        inputStringNumber(head->phoneNumber, PHONE_NUMBER_LEN);
-        setDepartmentHeads(&start, &end);
-        printf("[#] Phone number changed");
+        inputStringNumber(tempPhoneNumber, PHONE_NUMBER_LEN);
+        if (!validatePhoneNumber(tempPhoneNumber))
+            printf("[!] Wrong phone number. Phone number not changed");
+        else {
+            strcpy(head->phoneNumber, tempPhoneNumber);
+            setDepartmentHeads(&start, &end);
+            printf("[#] Phone number changed");
+        }
         Sleep(1000);
     }
 
@@ -2242,17 +2300,29 @@ void editStaff(User user) {
         Sleep(1000);
     }
     else if (digit == 2) {
+        char tempEmail[MAX_EMAIL_LEN];
         printf("[?] Enter new email: ");
-        inputString(staff->email, MAX_EMAIL_LEN);
-        setAcademicStaff(&start, &end);
-        printf("[#] Email changed");
+        inputString(tempEmail, MAX_EMAIL_LEN);
+        if (!validateEmail(tempEmail))
+            printf("[!] Wrong email format. email not changed");
+        else {
+            strcpy(staff->email, tempEmail);
+            setAcademicStaff(&start, &end);
+            printf("[#] Email changed");
+        }
         Sleep(1000);
     }
     else if (digit == 3) {
+        char tempPhoneNumber[PHONE_NUMBER_LEN];
         printf("[?] Enter new phone number: ");
-        inputStringNumber(staff->phoneNumber, PHONE_NUMBER_LEN);
-        setAcademicStaff(&start, &end);
-        printf("[#] Phone number changed");
+        inputStringNumber(tempPhoneNumber, PHONE_NUMBER_LEN);
+        if (!validatePhoneNumber(tempPhoneNumber))
+            printf("[!] Wrong phone number. phone number not changed");
+        else {
+            strcpy(staff->phoneNumber, tempPhoneNumber);
+            setAcademicStaff(&start, &end);
+            printf("[#] Phone number changed");
+        }
         Sleep(1000);
     }
 
@@ -2296,17 +2366,29 @@ void editStudent(void) {
             Sleep(1000);
         }
         else if (digit == 2) {
+            char tempPhoneNumber[PHONE_NUMBER_LEN];
             printf("[?] Enter new phone number: ");
-            inputStringNumber(curr->phoneNumber, PHONE_NUMBER_LEN);
-            setStudents(start, end);
-            printf("[#] Changes saved");
+            inputStringNumber(tempPhoneNumber, PHONE_NUMBER_LEN);
+            if (!validatePhoneNumber(tempPhoneNumber))
+                printf("[!] wrong phone number. phone number not changed");
+            else {
+                strcpy(curr->phoneNumber, tempPhoneNumber);
+                setStudents(start, end);
+                printf("[#] Changes saved");
+            }
             Sleep(1000);
         }
         else if (digit == 3) {
+            char tempEmail[MAX_EMAIL_LEN];
             printf("[?] Enter new email: ");
-            inputString(curr->email, PHONE_NUMBER_LEN);
-            setStudents(start, end);
-            printf("[#] Changes saved");
+            inputString(tempEmail, MAX_EMAIL_LEN);
+            if (!validateEmail(tempEmail))
+                printf("[!] Wrong email format. email not changed");
+            else {
+                strcpy(curr->email, tempEmail);
+                setStudents(start, end);
+                printf("[#] Changes saved");
+            }
             Sleep(1000);
         }
     }
@@ -3114,9 +3196,11 @@ void inputString(char input[], int size) {
     int n_chars = 0;
     while (n_chars < size - 2) {
         char ch = getch();
-        if (ch == '\n' || ch == '\r')
-        break;
-        
+        if (ch == '\n' || ch == '\r') {
+            if (n_chars != 0)
+                break;
+        }
+
         if (ch == '\b') {
             if (n_chars == 0)
                 continue;
@@ -3142,8 +3226,10 @@ void inputStringNumber(char strNumber[], int size) {
     int n_chars = 0;
     while (n_chars < size - 2) {
         char ch = getch();
-        if (ch == '\n' || ch == '\r')
-            break;
+        if (ch == '\n' || ch == '\r') {
+            if (n_chars != 0)
+                break;
+        }
 
         if (ch == '\b') {
             if (n_chars == 0)
@@ -3170,8 +3256,10 @@ void inputStringFloat(char strNumber[], int size) {
     int n_chars = 0;
     while (n_chars < size - 2) {
         char ch = getch();
-        if (ch == '\n' || ch == '\r')
-            break;
+        if (ch == '\n' || ch == '\r') {
+            if (n_chars != 0)
+                break;
+        }
 
         if (ch == '\b') {
             if (n_chars == 0)
@@ -3200,8 +3288,10 @@ void inputUsername(char input[], int size) {
     int n_chars = 0;
     while (n_chars < size - 2) {
         char ch = getch();
-        if (ch == '\n' || ch == '\r')
-            break;
+        if (ch == '\n' || ch == '\r') {
+            if (n_chars != 0)
+                break;
+        }
 
         if (ch == '\b') {
             if (n_chars == 0)
@@ -3229,8 +3319,10 @@ void inputPassword(char password[], int size) {
     int n_chars = 0;
     while (n_chars < size - 2) {
         char ch = getch();
-        if (ch == '\n' || ch == '\r')
-            break;
+        if (ch == '\n' || ch == '\r') {
+            if (n_chars != 0)
+                break;
+        }
 
         if (ch == '\b') {
             if (n_chars == 0)
@@ -3264,10 +3356,41 @@ int validateChar(char ch, const char acceptable[]) {
 }
 
 int validateDate(char date[]) {
-    return 1;
+    int i;
+    int len = strlen(date);
+    int slashCount = 0;
+    for (i = 0; i < len; i++) {
+        char ch = date[i];
+        if (!isdigit(ch) && ch != '/')
+            return 0;
+
+        if (ch == '/')
+            slashCount++;
+    }
+
+    if (slashCount != 2)
+        return 0;
+
+    int year, month, day;
+    extractDateInfo(date, &year, &month, &day);
+
+    if (year < 1000)
+        return 0;
+
+    if (month < 1 || month > 12)
+        return 0;
+
+    if (day < 1 || day > 31)
+        return 0;
 }
 
 int validatePhoneNumber(char phoneNumber[]) {
+    if (strlen(phoneNumber) != PHONE_NUMBER_LEN - 2)
+        return 0;
+
+    if (phoneNumber[0] != '0' || phoneNumber[1] != '9')
+        return 0;
+
     return 1;
 }
 
