@@ -28,6 +28,7 @@
 #define LESSONS_FILE "lessons.txt"
 #define GRADES_FILE "grades.txt"
 #define STUDENTS_FILE "students.txt"
+#define SIGN_IN_FILE "sign_in.txt"
 
 const char USERNAME_CHARS[] = "abcdefghijklmnopqrstuvwxyz1234567890_";
 
@@ -99,6 +100,13 @@ struct grade {
     struct grade *next;
 };
 
+struct signIn {
+    char username[MAX_USERNAME_LEN];
+    char status[STATUS_LEN];
+    long long int time;
+    struct signIn *next;
+};
+
 // function prototypes
 int inputDigit(void);
 void inputString(char input[], int size);
@@ -130,6 +138,9 @@ void freeLessons(struct lesson *start, struct lesson *end);
 void getGrades(struct grade **start, struct grade **end);
 void setGrades(struct grade *start, struct grade *end);
 void freeGrades(struct grade *start, struct grade *end);
+void getSignIns(struct signIn **start, struct signIn **end);
+void setSignIns(struct signIn *start, struct signIn *end);
+void freeSignIns(struct signIn *start, struct signIn *end);
 struct departmentHead *getHeadByUsername(struct departmentHead *start, struct departmentHead *end, char username[]);
 struct academicStaff *getStaffByUsername(struct academicStaff *start, struct academicStaff *end, char username[]);
 struct student *getStudentByStudentNumber(struct student *start, struct student *end, char studentNumber[]);
@@ -139,7 +150,6 @@ float getAverageGradeByStudentNumber(struct grade *start, struct grade *end, cha
 
 void sortStudentsByAverageGrade(struct student **startStu, struct student **endStu, struct grade *startGra, struct grade *endGra, int numStu);
 void sortGradesByStudentLastName(struct grade **startGra, struct grade **endGra, struct student *startStu, struct student *endStu, int numGra);
-
 
 User loginPanel(void);
 User loginAdmin(void);
@@ -184,6 +194,7 @@ void addNewStaff(void);
 void addNewStudent(void);
 void addNewLesson(void);
 void addNewGrade(User user);
+void addNewSignIn(char username[], char status[]);
 void editLesson(void);
 void editGrade(void);
 void editHead(User user);
@@ -234,6 +245,7 @@ User loginPanel(void) {
 User loginAdmin(void) {
     char username[MAX_USERNAME_LEN];
     char password[MAX_PASSWORD_LEN];
+    char status[STATUS_LEN];
     int askAgain = 0;
 
     do {
@@ -244,11 +256,15 @@ User loginAdmin(void) {
 
         if (strcmp(username, "admin") != 0 || strcmp(password, "admin") != 0) {
             printf("[!] Wrong information. Try again\n");
+            strcpy(status, "failed");
             askAgain = 1;
         }
         else {
+            strcpy(status, "success");
             askAgain = 0;
         }
+
+        addNewSignIn(username, status);
     } while (askAgain);
 
     User u;
@@ -264,27 +280,28 @@ User loginHead(void) {
     struct departmentHead *start, *end, *user;
     getDepartmentHeads(&start, &end);
 
+    char username[MAX_USERNAME_LEN];
+    char password[MAX_PASSWORD_LEN];
+    char status[STATUS_LEN];
     int correct;
     do {
-        char username[MAX_USERNAME_LEN];
         printf("[?] Enter username: ");
         inputUsername(username, MAX_USERNAME_LEN);
 
-        char password[MAX_PASSWORD_LEN];
         printf("[?] Enter password: ");
         inputPassword(password, MAX_PASSWORD_LEN);
 
         user = getHeadByUsername(start, end, username);
-        if (user != NULL) {
-            if (strcmp(user->password, password) != 0)
-                correct = 0;
-            else
-                correct = 1;
+        if (user != NULL && strcmp(user->password, password) == 0) {
+            strcpy(status, "success");
+            correct = 1;
         }
         else {
+            strcpy(status, "failed");
             correct = 0;
         }
 
+        addNewSignIn(username, status);
         if (!correct)
             printf("[!] Wrong information. Try again\n\n");
     } while (!correct);
@@ -301,27 +318,28 @@ User loginStaff(void) {
     struct academicStaff *start, *end, *user;
     getAcademicStaff(&start, &end);
 
+    char username[MAX_USERNAME_LEN];
+    char password[MAX_PASSWORD_LEN];
+    char status[STATUS_LEN];
     int correct;
     do {
-        char username[MAX_USERNAME_LEN];
         printf("[?] Enter username: ");
         inputUsername(username, MAX_USERNAME_LEN);
 
-        char password[MAX_PASSWORD_LEN];
         printf("[?] Enter password: ");
         inputPassword(password, MAX_PASSWORD_LEN);
 
         user = getStaffByUsername(start, end, username);
-        if (user != NULL) {
-            if (strcmp(user->password, password) != 0)
-                correct = 0;
-            else
-                correct = 1;
+        if (user != NULL && strcmp(user->password, password) == 0) {
+            strcpy(status, "success");
+            correct = 1;
         }
         else {
+            strcpy(status, "failed");
             correct = 0;
         }
 
+        addNewSignIn(username, status);
         if (!correct)
             printf("[!] Wrong information. Try again\n\n");
     } while (!correct);
@@ -2084,6 +2102,29 @@ void addNewGrade(User user) {
     Sleep(1000);
 }
 
+void addNewSignIn(char username[], char status[]) {
+    struct signIn *start, *curr, *end;
+    getSignIns(&start, &end);
+
+    curr = malloc(sizeof(struct signIn));
+    curr->time = time(NULL);
+    strcpy(curr->username, username);
+    strcpy(curr->status, status);
+    curr->next = NULL;
+
+    if (start == NULL) {
+        start = curr;
+        end = start;
+    }
+    else {
+        end->next = curr;
+        end = curr;
+    }
+
+    setSignIns(start, end);
+    freeSignIns(start, end);
+}
+
 void editLesson(void) {
     char lessonCode[LESSON_CODE_LEN];
     printf("[?] Enter lesson code: ");
@@ -3168,6 +3209,81 @@ float getAverageGradeByStudentNumber(struct grade *start, struct grade *end, cha
 }
 
 void freeGrades(struct grade *start, struct grade *end) {
+    end = start;
+    while (end != NULL) {
+        end = start->next;
+        free(start);
+        start = end;
+    }
+}
+
+void getSignIns(struct signIn **start, struct signIn **end) {
+    FILE *fp;
+    fp = fopen(SIGN_IN_FILE, "r");
+    if (fp == NULL) {
+        fp = fopen(SIGN_IN_FILE, "w");
+        fclose(fp);
+        fp = fopen(SIGN_IN_FILE, "r");
+        if (fp == NULL) {
+            printf("[!] Something went wrong while reading a file");
+            exit(1);
+        }
+    }
+
+    *start = NULL;
+    *end = NULL;
+    struct signIn *curr;
+    while (!feof(fp)) {
+        curr = malloc(sizeof(struct signIn));
+        if (fgets(curr->username, MAX_USERNAME_LEN, fp) == NULL) {
+            free(curr);
+            break;
+        }
+        removeNewLine(curr->username);
+
+        fgets(curr->status, STATUS_LEN, fp);
+        removeNewLine(curr->status);
+
+        char strNum[30];
+        fgets(strNum, 30, fp);
+        removeNewLine(strNum);
+        curr->time = atoll(strNum);
+
+        curr->next = NULL;
+        if (*start == NULL) {
+            *start = curr;
+            *end = *start;
+        }
+        else {
+            (*end)->next = curr;
+            *end = curr;
+        }
+    }
+
+    fclose(fp);
+}
+
+void setSignIns(struct signIn *start, struct signIn *end) {
+    FILE *fp;
+    fp = fopen(SIGN_IN_FILE, "w");
+    if (fp == NULL) {
+        printf("[!] Something went wrong while writing to a file");
+        exit(1);
+    }
+
+    struct signIn *curr;
+    curr = start;
+    while (curr != NULL) {
+        fprintf(fp, "%s\n", curr->username);
+        fprintf(fp, "%s\n", curr->status);
+        fprintf(fp, "%lld\n", curr->time);
+        curr = curr->next;
+    }
+
+    fclose(fp);
+}
+
+void freeSignIns(struct signIn *start, struct signIn *end) {
     end = start;
     while (end != NULL) {
         end = start->next;
