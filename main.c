@@ -12,6 +12,8 @@
 #define MAX_NAME_LEN 26
 #define MAX_EMAIL_LEN 21
 #define MAX_USERNAME_LEN 16
+#define MAX_SIGNIN_TRIES 3
+#define MAX_SIGNIN_TRIES_PERIOD 15
 
 #define PHONE_NUMBER_LEN 13
 #define NATIONAL_NUMBER_LEN 12
@@ -22,6 +24,7 @@
 #define PASSING_GRADE 10
 #define MAX_GRADE 20
 #define MIN_GRADE 0
+#define SIGNIN_LIMIT_TIME 300
 
 #define HEAD_PROFILES_FILE "department_head_profiles.txt"
 #define STAFF_PROFILES_FILE "academic_staff_profiles.txt"
@@ -29,6 +32,7 @@
 #define GRADES_FILE "grades.txt"
 #define STUDENTS_FILE "students.txt"
 #define SIGN_IN_FILE "sign_in.txt"
+#define LIMITS_FILE "limits.txt"
 
 const char USERNAME_CHARS[] = "abcdefghijklmnopqrstuvwxyz1234567890_";
 
@@ -107,6 +111,12 @@ struct signIn {
     struct signIn *next;
 };
 
+struct limit {
+    char username[MAX_USERNAME_LEN];
+    long long int releaseTime;
+    struct limit *next;
+};
+
 // function prototypes
 int inputDigit(void);
 void inputString(char input[], int size);
@@ -141,12 +151,16 @@ void freeGrades(struct grade *start, struct grade *end);
 void getSignIns(struct signIn **start, struct signIn **end);
 void setSignIns(struct signIn *start, struct signIn *end);
 void freeSignIns(struct signIn *start, struct signIn *end);
+void getLimits(struct limit **start, struct limit **end);
+void setLimits(struct limit *start, struct limit *end);
+void freeLimits(struct limit *start, struct limit *end);
 struct departmentHead *getHeadByUsername(struct departmentHead *start, struct departmentHead *end, char username[]);
 struct academicStaff *getStaffByUsername(struct academicStaff *start, struct academicStaff *end, char username[]);
 struct student *getStudentByStudentNumber(struct student *start, struct student *end, char studentNumber[]);
 struct lesson *getLessonByLessonCode(struct lesson *start, struct lesson *end, char lessonCode[]);
 struct grade *getGradeByLessonCodeAndStudentNumber(struct grade *start, struct grade *end, char lessonCode[], char studentNumber[]);
 float getAverageGradeByStudentNumber(struct grade *start, struct grade *end, char studentNumber[]);
+int checkLimitByUsername(struct limit *start, struct limit *end, char username[]);
 
 void sortStudentsByAverageGrade(struct student **startStu, struct student **endStu, struct grade *startGra, struct grade *endGra, int numStu);
 void sortGradesByStudentLastName(struct grade **startGra, struct grade **endGra, struct student *startStu, struct student *endStu, int numGra);
@@ -195,6 +209,7 @@ void addNewStudent(void);
 void addNewLesson(void);
 void addNewGrade(User user);
 void addNewSignIn(char username[], char status[]);
+void addNewLimit(char username[], long long int releaseTime);
 void editLesson(void);
 void editGrade(void);
 void editHead(User user);
@@ -248,9 +263,20 @@ User loginAdmin(void) {
     char status[STATUS_LEN];
     int askAgain = 0;
 
+    struct limit *startLim, *endLim;
+
     do {
+        getLimits(&startLim, &endLim);
+
         printf("[?] Enter your username: ");
         inputString(username, MAX_USERNAME_LEN);
+
+        if (checkLimitByUsername(startLim, endLim, username)) {
+            printf("[!] This account is frozen. Try again a few minutes later\n\n");
+            askAgain = 1;
+            continue;
+        }
+
         printf("[?] Enter password: ");
         inputPassword(password, MAX_PASSWORD_LEN);
 
@@ -265,6 +291,7 @@ User loginAdmin(void) {
         }
 
         addNewSignIn(username, status);
+        freeLimits(startLim, endLim);
     } while (askAgain);
 
     User u;
@@ -273,6 +300,7 @@ User loginAdmin(void) {
     strcpy(u.username, username);
     strcpy(u.password, password);
     strcpy(u.email, "admin@admin");
+
     return u;
 }
 
@@ -284,9 +312,20 @@ User loginHead(void) {
     char password[MAX_PASSWORD_LEN];
     char status[STATUS_LEN];
     int correct;
+
+    struct limit *startLim, *endLim;
+
     do {
+        getLimits(&startLim, &endLim);
+
         printf("[?] Enter username: ");
         inputUsername(username, MAX_USERNAME_LEN);
+
+        if (checkLimitByUsername(startLim, endLim, username)) {
+            printf("[!] This account is frozen. Try again a few minutes later\n\n");
+            correct = 0;
+            continue;
+        }
 
         printf("[?] Enter password: ");
         inputPassword(password, MAX_PASSWORD_LEN);
@@ -302,6 +341,7 @@ User loginHead(void) {
         }
 
         addNewSignIn(username, status);
+        freeLimits(startLim, endLim);
         if (!correct)
             printf("[!] Wrong information. Try again\n\n");
     } while (!correct);
@@ -322,9 +362,20 @@ User loginStaff(void) {
     char password[MAX_PASSWORD_LEN];
     char status[STATUS_LEN];
     int correct;
+
+    struct limit *startLim, *endLim;
+
     do {
+        getLimits(&startLim, &endLim);
+
         printf("[?] Enter username: ");
         inputUsername(username, MAX_USERNAME_LEN);
+
+        if (checkLimitByUsername(startLim, endLim, username)) {
+            printf("[!] This account is frozen. Try again a few minutes later\n\n");
+            correct = 0;
+            continue;
+        }
 
         printf("[?] Enter password: ");
         inputPassword(password, MAX_PASSWORD_LEN);
@@ -340,6 +391,7 @@ User loginStaff(void) {
         }
 
         addNewSignIn(username, status);
+        freeLimits(startLim, endLim);
         if (!correct)
             printf("[!] Wrong information. Try again\n\n");
     } while (!correct);
@@ -2121,8 +2173,46 @@ void addNewSignIn(char username[], char status[]) {
         end = curr;
     }
 
+    // look if user has exceeded maximum
+    // sign-in tries count
+    long long int now = time(NULL);
+    curr = start;
+    int count = 0;
+    while (curr != NULL) {
+        long long int timePassed = now - curr->time;
+        if (strcmp(curr->username, username) == 0 && timePassed <= MAX_SIGNIN_TRIES_PERIOD)
+            count++;
+
+        curr = curr->next;
+    }
+
+    if (count >= MAX_SIGNIN_TRIES)
+        addNewLimit(username, now + SIGNIN_LIMIT_TIME);
+
     setSignIns(start, end);
     freeSignIns(start, end);
+}
+
+void addNewLimit(char username[], long long int releaseTime) {
+    struct limit *start, *curr, *end;
+    getLimits(&start, &end);
+
+    curr = malloc(sizeof(struct limit));
+    curr->releaseTime = releaseTime;
+    strcpy(curr->username, username);
+    curr->next = NULL;
+
+    if (start == NULL) {
+        start = curr;
+        end = start;
+    }
+    else {
+        end->next = curr;
+        end = curr;
+    }
+
+    setLimits(start, end);
+    freeLimits(start, end);
 }
 
 void editLesson(void) {
@@ -3208,6 +3298,20 @@ float getAverageGradeByStudentNumber(struct grade *start, struct grade *end, cha
     return avg;
 }
 
+int checkLimitByUsername(struct limit *start, struct limit *end, char username[]) {
+    struct limit *curr;
+    curr = start;
+    long long int now = time(NULL);
+    while (curr != NULL) {
+        if (strcmp(curr->username, username) == 0 && curr->releaseTime >= now)
+            return 1;
+
+        curr = curr->next;
+    }
+
+    return 0;
+}
+
 void freeGrades(struct grade *start, struct grade *end) {
     end = start;
     while (end != NULL) {
@@ -3284,6 +3388,78 @@ void setSignIns(struct signIn *start, struct signIn *end) {
 }
 
 void freeSignIns(struct signIn *start, struct signIn *end) {
+    end = start;
+    while (end != NULL) {
+        end = start->next;
+        free(start);
+        start = end;
+    }
+}
+
+void getLimits(struct limit **start, struct limit **end) {
+    FILE *fp;
+    fp = fopen(LIMITS_FILE, "r");
+    if (fp == NULL) {
+        fp = fopen(LIMITS_FILE, "w");
+        fclose(fp);
+        fp = fopen(LIMITS_FILE, "w");
+        if (fp == NULL) {
+            printf("[Error] Something went wrong while writing to a file");
+            exit(1);
+        }
+    }
+
+    *start = NULL;
+    *end = NULL;
+    struct limit *curr;
+    while (!feof(fp)) {
+        curr = malloc(sizeof(struct limit));
+        if (fgets(curr->username, MAX_USERNAME_LEN, fp) == NULL) {
+            free(curr);
+            break;
+        }
+        removeNewLine(curr->username);
+
+        char strNum[30];
+        fgets(strNum, 30, fp);
+        removeNewLine(strNum);
+        curr->releaseTime = atoll(strNum);
+
+        curr->next = NULL;
+        if (*start == NULL) {
+            *start = curr;
+            *end = *start;
+        }
+        else {
+            (*end)->next = curr;
+            *end = curr;
+        }
+    }
+
+    fclose(fp);
+}
+
+void setLimits(struct limit *start, struct limit *end) {
+    FILE *fp;
+    fp = fopen(LIMITS_FILE, "w");
+    if (fp == NULL) {
+        printf("[Error] Something went wrong while writing to a file");
+        exit(1);
+    }
+
+    struct limit *curr;
+    curr = start;
+    while (curr != NULL) {
+        fprintf(fp, "%s\n", curr->username);
+        fprintf(fp, "%lld\n", curr->releaseTime);
+
+        curr = curr->next;
+    }
+
+    fclose(fp);
+}
+
+void freeLimits(struct limit *start, struct limit *end) {
     end = start;
     while (end != NULL) {
         end = start->next;
