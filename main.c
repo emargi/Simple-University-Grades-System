@@ -2075,8 +2075,22 @@ void addNewLesson(void) {
         printf("[?] Enter type: ");
         inputString(curr->type, MAX_NAME_LEN);
 
-        printf("[?] Enter code: ");
-        inputStringNumber(curr->code, LESSON_CODE_LEN);
+        int correct;
+        do {
+            printf("[?] Enter code: ");
+            inputStringNumber(curr->code, LESSON_CODE_LEN);
+            struct lesson *startLes, *currLes, *endLes;
+            getLessons(&startLes, &endLes);
+            currLes = getLessonByLessonCode(startLes, endLes, curr->code);
+            if (currLes != NULL) {
+                printf("[!] A lesson with this code already exists. Try another one\n");
+                correct = 0;
+            }
+            else
+                correct = 1;
+
+            freeLessons(startLes, endLes);
+        } while (!correct);
 
         strcpy(curr->status, "enabled");
         curr->next = NULL;
@@ -2606,8 +2620,8 @@ int deleteHead(char username[]) {
 
     printf("[#] User found: Department Head, %s %s\n", curr->firstName, curr->lastName);
     printf("[??] Do you want to delete this user (yes/no): ");
-    char answer[5];
-    inputString(answer, 5);
+    char answer[7];
+    inputString(answer, 7);
     if (strcmp(answer, "yes") != 0) {
         freeDepartmentHeads(start, end);
         printf("[!] Operation canceled");
@@ -2645,8 +2659,8 @@ int deleteStaff(char username[]) {
 
     printf("[#] User found: Academic staff, %s %s\n", curr->firstName, curr->lastName);
     printf("[??] Do you want to delete this user (yes/no): ");
-    char answer[5];
-    inputString(answer, 5);
+    char answer[7];
+    inputString(answer, 7);
 
     if (strcmp(answer, "yes") != 0) {
         freeAcademicStaff(start, end);
@@ -2676,9 +2690,9 @@ void deleteLesson(void) {
     }
     else {
         printf("[#] Lesson found: %s - %s\n", curr->type, curr->name);
-        char answer[5];
+        char answer[7];
         printf("[?] Do you want to delete it (yes/no): ");
-        inputString(answer, 5);
+        inputString(answer, 7);
 
         if (strcmp(answer, "yes") == 0) {
             strcpy(curr->status, "deleted");
