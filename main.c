@@ -161,6 +161,7 @@ struct lesson *getLessonByLessonCode(struct lesson *start, struct lesson *end, c
 struct grade *getGradeByLessonCodeAndStudentNumber(struct grade *start, struct grade *end, char lessonCode[], char studentNumber[]);
 float getAverageGradeByStudentNumber(struct grade *start, struct grade *end, char studentNumber[]);
 int checkLimitByUsername(char username[]);
+int checkUserByUsername(char username[]);
 
 void sortStudentsByAverageGrade(struct student **startStu, struct student **endStu, struct grade *startGra, struct grade *endGra, int numStu);
 void sortGradesByStudentLastName(struct grade **startGra, struct grade **endGra, struct student *startStu, struct student *endStu, int numGra);
@@ -1737,8 +1738,14 @@ void addNewHead() {
                 printf("[!] Wrong email. Try again\n");
         } while (!correct);
 
-        printf("[?] Enter username: ");
-        inputUsername(curr->username, MAX_USERNAME_LEN);
+        int usernameTaken;
+        do {
+            printf("[?] Enter username: ");
+            inputUsername(curr->username, MAX_USERNAME_LEN);
+            usernameTaken = checkUserByUsername(curr->username);
+            if (usernameTaken)
+                printf("[!] This username is already taken. Try another one\n");
+        } while (usernameTaken);
 
         int same;
         char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
@@ -1840,8 +1847,14 @@ void addNewStaff(void) {
             printf("[!] Wrong email. Try again\n");
         } while (!correct);
 
-        printf("[?] Enter username: ");
-        inputUsername(curr->username, MAX_USERNAME_LEN);
+        int usernameTaken;
+        do {
+            printf("[?] Enter username: ");
+            inputUsername(curr->username, MAX_USERNAME_LEN);
+            usernameTaken = checkUserByUsername(curr->username);
+            if (usernameTaken)
+                printf("[!] This username is already taken. Try another one\n");
+        } while (usernameTaken);
 
         char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
         do {
@@ -3300,6 +3313,48 @@ int checkLimitByUsername(char username[]) {
 
     freeLimits(start, end);
     return 0;
+}
+
+int checkUserByUsername(char username[]) {
+    if (strcmp(username, "admin") == 0)
+        return 1;
+
+    int found = 0;
+
+    struct departmentHead *startHead, *currHead, *endHead;
+    getDepartmentHeads(&startHead, &endHead);
+
+    currHead = startHead;
+    while (currHead != NULL) {
+        if (strcmp(currHead->status, "deleted") != 0
+            && strcmp(currHead->username, username) == 0) {
+                found = 1;
+                break;
+        }
+
+        currHead = currHead->next;
+    }
+    freeDepartmentHeads(startHead, endHead);
+
+    if (found)
+        return 1;
+
+    struct academicStaff *startStaff, *currStaff, *endStaff;
+    getAcademicStaff(&startStaff, &endStaff);
+
+    currStaff = startStaff;
+    while (currStaff != NULL) {
+        if (strcmp(currStaff->status, "deleted") != 0
+            && strcmp(currStaff->username, username) == 0) {
+                found = 1;
+                break;
+        }
+
+        currStaff = currStaff->next;
+    }
+    freeAcademicStaff(startStaff, endStaff);
+
+    return found;
 }
 
 void freeGrades(struct grade *start, struct grade *end) {
