@@ -163,6 +163,8 @@ struct grade *getGradeByLessonCodeAndStudentNumber(struct grade *start, struct g
 float getAverageGradeByStudentNumber(struct grade *start, struct grade *end, char studentNumber[]);
 int checkLimitByUsername(char username[]);
 int checkUserByUsername(char username[]);
+int checkStudentByStudentNumber(char studentNumber[]);
+int checkLessonByLessonCode(char lessonCode[]);
 
 void sortStudentsByAverageGrade(struct student **startStu, struct student **endStu, struct grade *startGra, struct grade *endGra, int numStu);
 void sortGradesByStudentLastName(struct grade **startGra, struct grade **endGra, struct student *startStu, struct student *endStu, int numGra);
@@ -1988,19 +1990,12 @@ void addNewStudent(void) {
                 printf("[!] Wrong student number. Try again\n");
                 isCorrect = 0;
             }
-            else {
-                struct student *startStu, *currStu, *endStu;
-                getStudents(&startStu, &endStu);
-                currStu = getStudentByStudentNumber(startStu, endStu, curr->studentNumber);
-                if (currStu != NULL) {
-                    printf("[!] This student number already exists. Try another one\n");
-                    isCorrect = 0;
-                }
-                else
-                    isCorrect = 1;
-
-                freeStudents(startStu, endStu);
+            else if (checkStudentByStudentNumber(curr->studentNumber)) {
+                printf("[!] This student number already exists. Try another one\n");
+                isCorrect = 0;
             }
+            else
+                isCorrect = 1;
         } while (!isCorrect);
 
         do {
@@ -2079,17 +2074,12 @@ void addNewLesson(void) {
         do {
             printf("[?] Enter code: ");
             inputStringNumber(curr->code, LESSON_CODE_LEN);
-            struct lesson *startLes, *currLes, *endLes;
-            getLessons(&startLes, &endLes);
-            currLes = getLessonByLessonCode(startLes, endLes, curr->code);
-            if (currLes != NULL) {
+            if (checkLessonByLessonCode(curr->code)) {
                 printf("[!] A lesson with this code already exists. Try another one\n");
                 correct = 0;
             }
             else
                 correct = 1;
-
-            freeLessons(startLes, endLes);
         } while (!correct);
 
         strcpy(curr->status, "enabled");
@@ -2137,10 +2127,18 @@ void addNewGrade(User user) {
         curr = malloc(sizeof(struct grade));
         printf("[#] Enter the information of grade #%d:\n", i + 1);
 
-        printf("[?] Enter lesson code: ");
-        inputStringNumber(curr->lessonCode, LESSON_CODE_LEN);
-
         int isCorrect;
+        do {
+            printf("[?] Enter lesson code: ");
+            inputStringNumber(curr->lessonCode, LESSON_CODE_LEN);
+            if (checkLessonByLessonCode(curr->lessonCode))
+                isCorrect = 1;
+            else {
+                printf("[!] There is no lesson with this lesson code. Try another one\n");
+                isCorrect = 0;
+            }
+        } while (!isCorrect);
+
         do {
             printf("[?] Enter student number: ");
             inputStringNumber(curr->studentNumber, STUDENT_NUMBER_LEN);
@@ -2148,20 +2146,26 @@ void addNewGrade(User user) {
                 printf("[!] Wrong student number. Try again\n");
                 isCorrect = 0;
             }
+            else if (!checkStudentByStudentNumber(curr->studentNumber)) {
+                printf("[!] There is no student with this student number. Try another one\n");
+                isCorrect = 0;
+            }
             else
                 isCorrect = 1;
         } while (!isCorrect);
 
-        struct grade *temp;
-        temp = getGradeByLessonCodeAndStudentNumber(first, last, curr->lessonCode, curr->studentNumber);
+        struct grade *startGra, *temp, *endGra;
+        getGrades(&startGra, &endGra);
+        temp = getGradeByLessonCodeAndStudentNumber(startGra, endGra, curr->lessonCode, curr->studentNumber);
         if (temp != NULL) {
             printf("[!] There's already a grade stored for this student in this lesson.");
             printf("Try again\n\n");
             free(curr);
-            temp = NULL;
-            curr = NULL;
+            freeGrades(startGra, endGra);
+            i--;
             continue;
         }
+        freeGrades(startGra, endGra);
 
         char strNumber[10];
         do {
@@ -3410,6 +3414,30 @@ int checkUserByUsername(char username[]) {
     }
     freeAcademicStaff(startStaff, endStaff);
 
+    return found;
+}
+
+int checkStudentByStudentNumber(char studentNumber[]) {
+    struct student *start, *curr, *end;
+    getStudents(&start, &end);
+    curr = getStudentByStudentNumber(start, end, studentNumber);
+    int found = 0;
+    if (curr != NULL)
+        found = 1;
+
+    freeStudents(start, end);
+    return found;
+}
+
+int checkLessonByLessonCode(char lessonCode[]) {
+    struct lesson *start, *curr, *end;
+    getLessons(&start, &end);
+    curr = getLessonByLessonCode(start, end, lessonCode);
+    int found = 0;
+    if (curr != NULL)
+        found = 1;
+
+    freeLessons(start, end);
     return found;
 }
 
