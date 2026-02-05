@@ -1983,13 +1983,24 @@ void addNewStudent(void) {
 
         do {
             printf("[?] Enter student number: ");
-            inputStringNumber(curr->studentNumber, MAX_NAME_LEN);
+            inputStringNumber(curr->studentNumber, STUDENT_NUMBER_LEN);
             if (strlen(curr->studentNumber) != STUDENT_NUMBER_LEN - 2) {
                 printf("[!] Wrong student number. Try again\n");
                 isCorrect = 0;
             }
-            else
-                isCorrect = 1;
+            else {
+                struct student *startStu, *currStu, *endStu;
+                getStudents(&startStu, &endStu);
+                currStu = getStudentByStudentNumber(startStu, endStu, curr->studentNumber);
+                if (currStu != NULL) {
+                    printf("[!] This student number already exists. Try another one\n");
+                    isCorrect = 0;
+                }
+                else
+                    isCorrect = 1;
+
+                freeStudents(startStu, endStu);
+            }
         } while (!isCorrect);
 
         do {
