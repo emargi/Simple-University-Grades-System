@@ -222,6 +222,9 @@ void editStudent(void);
 void createBackup(void);
 void useBackup(void);
 
+int backupFile(char dirPath[], char filename[]);
+int useBackupFile(char dirPath[], char filename[]);
+
 void deleteUser(void);
 int deleteHead(char username[]);
 int deleteStaff(char username[]);
@@ -237,7 +240,7 @@ void main() {
 User loginPanel(void) {
     system("cls");
 
-    printf("[#] Welcome to Student Management System");
+    printf("[#] Welcome to Student Management System\n");
     printf("[#] To use this program, you should first login to your account\n");
     printf("[#] The available roles to login as are listed below\n");
     printf("\n1. Admin\n2. Deparment Head\n3. Academic Staff\n\n0. Exit");
@@ -406,20 +409,14 @@ void mainMenu(User user) {
 }
 
 void adminMainMenu(User user) {
-    int choice = -1;
-    do {
-        printf("[#] The available actions are listed below:\n");
-        printf("\n1. Add new department head\n2. Add new academic staff");
-        printf("\n3. List users\n4. Delete user\n5. Log\n6. Create backup");
-        printf("\n7. Use backup\n\n0. Log out");
-        printf("\n\n[?] Enter your choice (enter number): ");
+    printf("[#] The available actions are listed below:\n");
+    printf("\n1. Add new department head\n2. Add new academic staff");
+    printf("\n3. List users\n4. Delete user\n5. Log\n6. Create backup");
+    printf("\n7. Use backup\n\n0. Log out");
+    printf("\n\n[?] Enter your choice (enter number): ");
 
-        choice = inputDigit();
-        printf("\n");
-        if (choice < 0 || choice > 6) {
-            printf("[Error] Wrong number. Try again\n");
-        }
-    } while (choice < 0 || choice > 6);
+    int choice = inputDigit();
+    printf("\n");
 
     if (choice == 0) {
         user = loginPanel();
@@ -2715,72 +2712,96 @@ void deleteLesson(void) {
 
 void createBackup(void) {
     char path[110];
-    printf("[?] Enter destination path (sample: D:\\backups): ");
+    printf("[?] Enter destination path (sample: D:\\Backup_2026_01_01): ");
     inputString(path, 110);
 
-    char dest[150];
-    strcpy(dest, path);
-    strcat(dest, "\\");
-    strcat(dest, HEAD_PROFILES_FILE);
-
-    FILE *fd;
-    fd = fopen(dest, "w");
-    if (fd == NULL) {
-        printf("[!] Wrong path");
-        Sleep(1000);
+    if (backupFile(path, HEAD_PROFILES_FILE)) {
+        backupFile(path, STAFF_PROFILES_FILE);
+        backupFile(path, STUDENTS_FILE);
+        backupFile(path, LESSONS_FILE);
+        backupFile(path, GRADES_FILE);
+        backupFile(path, SIGN_IN_FILE);
+        backupFile(path, LIMITS_FILE);
+        printf("[#] copied files successfully");
     }
     else {
-        FILE *fs;
-        fs = fopen(HEAD_PROFILES_FILE, "r");
-        if (fs == NULL) {
-            printf("[Error] Something went wrong");
-            fclose(fd);
-            exit(1);
-        }
-
-        char ch = fgetc(fs);
-        while (ch != EOF) {
-            fputc(ch, fd);
-            ch = fgetc(fs);
-        }
-
-        fclose(fs);
-        fclose(fd);
-        printf("[#] Department head information: backup done\n");
+        printf("[!] You entered wrong path");
     }
 
-    strcpy(dest, path);
-    strcat(dest, "\\");
-    strcat(dest, STAFF_PROFILES_FILE);
-
-    fd = fopen(dest, "w");
-    if (fd == NULL) {
-        printf("[!] Wrong path");
-        Sleep(1000);
-    }
-    else {
-        FILE *fs;
-        fs = fopen(STAFF_PROFILES_FILE, "r");
-        if (fs == NULL) {
-            printf("[Error] Something went wrong");
-            fclose(fd);
-            exit(1);
-        }
-
-        char ch = fgetc(fs);
-        while (ch != EOF) {
-            fputc(ch, fd);
-            ch = fgetc(fs);
-        }
-
-        fclose(fd);
-        fclose(fs);
-        printf("[#] Academic staff information: backup done");
-    }
+    Sleep(1000);
 }
 
 void useBackup(void) {
-    // ...
+    char path[110];
+    printf("[?] Enter backup directory path (sample: D:\\Backup_2026_01_01): ");
+    inputString(path, 110);
+
+    if (useBackupFile(path, HEAD_PROFILES_FILE)) {
+        useBackupFile(path, STAFF_PROFILES_FILE);
+        useBackupFile(path, STUDENTS_FILE);
+        useBackupFile(path, LESSONS_FILE);
+        useBackupFile(path, GRADES_FILE);
+        useBackupFile(path, SIGN_IN_FILE);
+        useBackupFile(path, LIMITS_FILE);
+        printf("[#] copied files successfully");
+    }
+    else {
+        printf("[!] You entered wrong path");
+    }
+
+    Sleep(1000);
+}
+
+int backupFile(char dirPath[], char filename[]) {
+    char path[200];
+    strcpy(path, dirPath);
+    strcat(path, "\\");
+    strcat(path, filename);
+
+    FILE *sf, *df; // source file, destination file
+    df = fopen(path, "w");
+    if (df == NULL)
+        return 0;
+
+    sf = fopen(filename, "r");
+    if (sf != NULL) {
+        char ch = fgetc(sf);
+        while (ch != EOF) {
+            fputc(ch, df);
+            ch = fgetc(sf);
+        }
+
+        fclose(sf);
+        fclose(df);
+    }
+
+    return 1;
+}
+
+int useBackupFile(char dirPath[], char filename[]) {
+    char path[200];
+    strcpy(path, dirPath);
+    strcat(path, "\\");
+    strcat(path, filename);
+
+    FILE *sf, *df;
+    sf = fopen(path, "r");
+    if (sf == NULL)
+        return 0;
+
+    df = fopen(filename, "w");
+    if (df != NULL) {
+        char ch = fgetc(sf);
+        while (ch != EOF) {
+            fputc(ch, df);
+            ch = fgetc(sf);
+        }
+
+        fclose(sf);
+        fclose(df);
+    }
+
+    return 1;
 }
 
 void getDepartmentHeads(struct departmentHead **start, struct departmentHead **end) {
