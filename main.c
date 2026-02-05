@@ -129,6 +129,7 @@ int validateChar(char ch, const char acceptable[]);
 int validateDate(char date[]);
 int validatePhoneNumber(char phoneNumber[]);
 int validateEmail(char email[]);
+int validateName(char name[]);
 
 void removeNewLine(char str[]);
 void extractDateInfo(char date[], int *year, int *month, int *day);
@@ -1693,16 +1694,26 @@ void addNewHead() {
         curr = malloc(sizeof(struct departmentHead));
         printf("[#] Enter the information of user #%d:\n", i + 1);
 
-        printf("[?] Enter first name: ");
-        inputString(curr->firstName, MAX_NAME_LEN);
-    
-        printf("[?] Enter last name: ");
-        inputString(curr->lastName, MAX_NAME_LEN);
+        int correct;
+        do {
+            printf("[?] Enter first name: ");
+            inputString(curr->firstName, MAX_NAME_LEN);
+            correct = validateName(curr->firstName);
+            if (!correct)
+                printf("[!] Wrong characters. Try with english characters and space\n");
+        } while (!correct);
+
+        do {
+            printf("[?] Enter last name: ");
+            inputString(curr->lastName, MAX_NAME_LEN);
+            correct = validateName(curr->lastName);
+            if (!correct)
+                printf("[!] Wrong characters. Try with english characters and space\n");
+        } while (!correct);
 
         printf("[?] Enter group name: ");
         inputString(curr->groupName, MAX_NAME_LEN);
 
-        int correct;
         do {
             printf("[?] Enter join date (sample: 2026/01/01): ");
             inputString(curr->joinDate, DATE_LEN);
@@ -1810,14 +1821,24 @@ void addNewStaff(void) {
     for (i = 0; i < num; i++) {
         curr = malloc(sizeof(struct academicStaff));
         printf("\n[#] Enter the information of staff #%d:\n", i + 1);
-        
-        printf("[?] Enter first name: ");
-        inputString(curr->firstName, MAX_NAME_LEN);
-        
-        printf("[?] Enter last name: ");
-        inputString(curr->lastName, MAX_NAME_LEN);
-        
+
         int correct;
+        do {
+            printf("[?] Enter first name: ");
+            inputString(curr->firstName, MAX_NAME_LEN);
+            correct = validateName(curr->firstName);
+            if (!correct)
+                printf("[!] Wrong characters. Try with english characters and space\n");
+        } while (!correct);
+
+        do {
+            printf("[?] Enter last name: ");
+            inputString(curr->lastName, MAX_NAME_LEN);
+            correct = validateName(curr->lastName);
+            if (!correct)
+                printf("[!] Wrong characters. Try with english characters and space\n");
+        } while (!correct);
+
         do {
             printf("[?] Enter the date of join (sample: 2026/01/01): ");
             inputString(curr->joinDate, DATE_LEN);
@@ -1918,13 +1939,23 @@ void addNewStudent(void) {
         curr = malloc(sizeof(struct student));
         printf("\n[#] Enter the information of student #%d:\n", i + 1);
 
-        printf("[?] Enter first name: ");
-        inputString(curr->firstName, MAX_NAME_LEN);
-
-        printf("[?] Enter last name: ");
-        inputString(curr->lastName, MAX_NAME_LEN);
-
         int isCorrect;
+        do {
+            printf("[?] Enter first name: ");
+            inputString(curr->firstName, MAX_NAME_LEN);
+            isCorrect = validateName(curr->firstName);
+            if (!isCorrect)
+                printf("[!] Wrong characters. Try with english characters and space\n");
+        } while (!isCorrect);
+
+        do {
+            printf("[?] Enter last name: ");
+            inputString(curr->lastName, MAX_NAME_LEN);
+            isCorrect = validateName(curr->lastName);
+            if (!isCorrect)
+                printf("[!] Wrong characters. Try with english characters and space\n");
+        } while (!isCorrect);
+
         do {
             printf("[?] Enter national number: ");
             inputStringNumber(curr->nationalNumber, NATIONAL_NUMBER_LEN);
@@ -3772,6 +3803,17 @@ int validateEmail(char email[]) {
             if (email[i+1] == '.')
                 return 0;
         }
+    }
+
+    return 1;
+}
+
+int validateName(char name[]) {
+    int i;
+    int len = strlen(name);
+    for (i = 0; i < len; i++) {
+        if (!isalpha(name[i]))
+            return 0;
     }
 
     return 1;
