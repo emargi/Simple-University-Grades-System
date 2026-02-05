@@ -160,7 +160,7 @@ struct student *getStudentByStudentNumber(struct student *start, struct student 
 struct lesson *getLessonByLessonCode(struct lesson *start, struct lesson *end, char lessonCode[]);
 struct grade *getGradeByLessonCodeAndStudentNumber(struct grade *start, struct grade *end, char lessonCode[], char studentNumber[]);
 float getAverageGradeByStudentNumber(struct grade *start, struct grade *end, char studentNumber[]);
-int checkLimitByUsername(struct limit *start, struct limit *end, char username[]);
+int checkLimitByUsername(char username[]);
 
 void sortStudentsByAverageGrade(struct student **startStu, struct student **endStu, struct grade *startGra, struct grade *endGra, int numStu);
 void sortGradesByStudentLastName(struct grade **startGra, struct grade **endGra, struct student *startStu, struct student *endStu, int numGra);
@@ -263,15 +263,11 @@ User loginAdmin(void) {
     char status[STATUS_LEN];
     int askAgain = 0;
 
-    struct limit *startLim, *endLim;
-
     do {
-        getLimits(&startLim, &endLim);
-
         printf("[?] Enter your username: ");
         inputString(username, MAX_USERNAME_LEN);
 
-        if (checkLimitByUsername(startLim, endLim, username)) {
+        if (checkLimitByUsername(username)) {
             printf("[!] This account is frozen. Try again a few minutes later\n\n");
             askAgain = 1;
             continue;
@@ -291,7 +287,6 @@ User loginAdmin(void) {
         }
 
         addNewSignIn(username, status);
-        freeLimits(startLim, endLim);
     } while (askAgain);
 
     User u;
@@ -313,15 +308,11 @@ User loginHead(void) {
     char status[STATUS_LEN];
     int correct;
 
-    struct limit *startLim, *endLim;
-
     do {
-        getLimits(&startLim, &endLim);
-
         printf("[?] Enter username: ");
         inputUsername(username, MAX_USERNAME_LEN);
 
-        if (checkLimitByUsername(startLim, endLim, username)) {
+        if (checkLimitByUsername(username)) {
             printf("[!] This account is frozen. Try again a few minutes later\n\n");
             correct = 0;
             continue;
@@ -341,7 +332,6 @@ User loginHead(void) {
         }
 
         addNewSignIn(username, status);
-        freeLimits(startLim, endLim);
         if (!correct)
             printf("[!] Wrong information. Try again\n\n");
     } while (!correct);
@@ -363,15 +353,11 @@ User loginStaff(void) {
     char status[STATUS_LEN];
     int correct;
 
-    struct limit *startLim, *endLim;
-
     do {
-        getLimits(&startLim, &endLim);
-
         printf("[?] Enter username: ");
         inputUsername(username, MAX_USERNAME_LEN);
 
-        if (checkLimitByUsername(startLim, endLim, username)) {
+        if (checkLimitByUsername(username)) {
             printf("[!] This account is frozen. Try again a few minutes later\n\n");
             correct = 0;
             continue;
@@ -391,7 +377,6 @@ User loginStaff(void) {
         }
 
         addNewSignIn(username, status);
-        freeLimits(startLim, endLim);
         if (!correct)
             printf("[!] Wrong information. Try again\n\n");
     } while (!correct);
@@ -1715,7 +1700,7 @@ void addNewHead() {
 
         printf("[?] Enter group name: ");
         inputString(curr->groupName, MAX_NAME_LEN);
-    
+
         int correct;
         do {
             printf("[?] Enter join date (sample: 2026/01/01): ");
@@ -3298,17 +3283,22 @@ float getAverageGradeByStudentNumber(struct grade *start, struct grade *end, cha
     return avg;
 }
 
-int checkLimitByUsername(struct limit *start, struct limit *end, char username[]) {
-    struct limit *curr;
+int checkLimitByUsername(char username[]) {
+    struct limit *start, *curr, *end;
+    getLimits(&start, &end);
+
     curr = start;
     long long int now = time(NULL);
     while (curr != NULL) {
-        if (strcmp(curr->username, username) == 0 && curr->releaseTime >= now)
+        if (strcmp(curr->username, username) == 0 && curr->releaseTime >= now) {
+            freeLimits(start, end);
             return 1;
+        }
 
         curr = curr->next;
     }
 
+    freeLimits(start, end);
     return 0;
 }
 
