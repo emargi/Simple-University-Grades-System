@@ -208,6 +208,8 @@ void listDeletedStaff(void);
 void listDeletedLessons(void);
 void listStudentsSortedByAverageGrade(void);
 void listLessonGradesSortedByStudentName(void);
+void listSignIns(void);
+void listSuccessfulSignIns(void);
 
 void addNewHead(void);
 void addNewStaff(void);
@@ -528,7 +530,7 @@ void adminLog(User user) {
     printf("[#] The available actions here are listed below:\n");
     printf("\n1. List of department heads\n2. List of academic staff");
     printf("\n3. List of deleted department heads\n4. List of deleted academic staff");
-    printf("\n5. List of successfull logins\n6. List of unsuccessful logins");
+    printf("\n5. List of all logins\n6. List of successful logins");
     printf("\n\n0. Return to the main menu\n\n");
     printf("[?] Enter your choice (enter number): ");
     int digit = inputDigit();
@@ -549,6 +551,12 @@ void adminLog(User user) {
 
     else if (digit == 4)
         listDeletedStaff();
+
+    else if (digit == 5)
+        listSignIns();
+
+    else if (digit == 6)
+        listSuccessfulSignIns();
 
     printf("\n\nPress any key to continue...");
     getch();
@@ -1611,6 +1619,61 @@ void listLessonGradesSortedByStudentName(void) {
     freeLessons(startLes, endLes);
     printf("\n\nPress any key to continue...");
     getch();
+}
+
+void listSignIns(void) {
+    struct signIn *start, *curr, *end;
+    getSignIns(&start, &end);
+
+    printf("[#] List of all logins to the system is as below:\n");
+    printf("+--------+------------+------------------+---------------------+\n");
+    printf("| Number | Status     | Username         | Time                |\n");
+    printf("+--------+------------+------------------+---------------------+\n");
+
+    curr = start;
+    int num = 0;
+    while (curr != NULL) {
+        num++;
+        printf("| %-6d | %-10s | %-16s ", num, curr->status, curr->username);
+        int year, month, day, hour, min, sec;
+        getTimeInfo(curr->time, &year, &month, &day, &hour, &min, &sec);
+        printf("| %04d/%02d/%02d %02d:%02d:%02d |\n", year, month, day, hour, min, sec);
+        printf("+--------+------------+------------------+---------------------+\n");
+
+        curr = curr->next;
+    }
+
+    freeSignIns(start, end);
+}
+
+void listSuccessfulSignIns(void) {
+    struct signIn *start, *curr, *end;
+    getSignIns(&start, &end);
+
+    printf("[#] List of all logins to the system is as below:\n");
+    printf("+--------+------------+------------------+---------------------+\n");
+    printf("| Number | Status     | Username         | Time                |\n");
+    printf("+--------+------------+------------------+---------------------+\n");
+
+    curr = start;
+    int num = 0;
+    while (curr != NULL) {
+        if (strcmp(curr->status, "success") != 0) {
+            curr = curr->next;
+            continue;
+        }
+
+        num++;
+        printf("| %-6d | %-10s | %-16s ", num, curr->status, curr->username);
+        int year, month, day, hour, min, sec;
+        getTimeInfo(curr->time, &year, &month, &day, &hour, &min, &sec);
+        printf("| %04d/%02d/%02d %02d:%02d:%02d |\n", year, month, day, hour, min, sec);
+        printf("+--------+------------+------------------+---------------------+\n");
+
+        curr = curr->next;
+    }
+
+    freeSignIns(start, end);
 }
 
 void sortStudentsByAverageGrade(struct student **startStu, struct student **endStu, struct grade *startGra, struct grade *endGra, int numStu) {
