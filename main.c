@@ -130,6 +130,7 @@ int validateDate(char date[]);
 int validatePhoneNumber(char phoneNumber[]);
 int validateEmail(char email[]);
 int validateName(char name[]);
+int validatePassword(char password[]);
 
 void removeNewLine(char str[]);
 void extractDateInfo(char date[], int *year, int *month, int *day);
@@ -885,18 +886,18 @@ void listStudents(void) {
     getStudents(&start, &end);
 
     if (start != NULL) {
-        printf("+----+------------+----------------------+-----------------+-------------+\n");
-        printf("| No | Student No | Last name            | Major           | National No |\n");
-        printf("+----+------------+----------------------+-----------------+-------------+\n");
+        printf("+----+------------+----------------------+------------------------+-------------+\n");
+        printf("| No | Student No | Last name            | Major                  | National No |\n");
+        printf("+----+------------+----------------------+------------------------+-------------+\n");
     }
 
     curr = start;
     int num = 1;
     while (curr != NULL) {
         printf("| %-2d | %-10s ", num, curr->studentNumber);
-        printf("| %-20s | %-15s ", curr->lastName, curr->major);
+        printf("| %-22s | %-15s ", curr->lastName, curr->major);
         printf("| %-10s  |\n", curr->nationalNumber);
-        printf("+----+------------+----------------------+-----------------+-------------+\n");
+        printf("+----+------------+----------------------+------------------------+-------------+\n");
 
         curr = curr->next;
         num++;
@@ -1017,7 +1018,7 @@ void listFailingStudents(void) {
             num++;
             printf("| %-2d | %-10s ", num, currStu->studentNumber);
             printf("| %-20s | %-20s ", currStu->firstName, currStu->lastName);
-            printf("| %-2.3f    |\n", avg);
+            printf("| %-2.3f     |\n", avg);
             printf("+----+------------+----------------------+----------------------+-----------+\n");
         }
 
@@ -1760,8 +1761,15 @@ void addNewHead() {
         int same;
         char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
         do {
-            printf("[?] Enter password: ");
-            inputPassword(password1, MAX_PASSWORD_LEN);
+            int strongPassword;
+            do {
+                printf("[?] Enter password: ");
+                inputPassword(password1, MAX_PASSWORD_LEN);
+                strongPassword = validatePassword(password1);
+                if (!strongPassword)
+                    printf("[!] This password is weak. Try another one\n");
+            } while (!strongPassword);
+
             printf("[?] Enter password again: ");
             inputPassword(password2, MAX_PASSWORD_LEN);
     
@@ -1878,8 +1886,15 @@ void addNewStaff(void) {
 
         char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
         do {
-            printf("[?] Enter password: ");
-            inputPassword(password1, MAX_PASSWORD_LEN);
+            int strongPassword;
+            do {
+                printf("[?] Enter password: ");
+                inputPassword(password1, MAX_PASSWORD_LEN);
+                strongPassword = validatePassword(password1);
+                if (!strongPassword)
+                    printf("[!] This password is weak. Try another one\n");
+            } while (!strongPassword);
+
             printf("[?] Enter password again: ");
             inputPassword(password2, MAX_PASSWORD_LEN);
             if (strcmp(password1, password2) != 0) {
@@ -2390,9 +2405,13 @@ void editHead(User user) {
             inputPassword(password2, MAX_PASSWORD_LEN);
 
             if (strcmp(password1, password2) == 0) {
-                strcpy(head->password, password1);
-                setDepartmentHeads(&start, &end);
-                printf("[#] Password changed");
+                if (validatePassword(password1)) {
+                    strcpy(head->password, password1);
+                    setDepartmentHeads(&start, &end);
+                    printf("[#] Password changed");
+                }
+                else
+                    printf("[!] This password is weak\n");
             }
             else {
                 printf("[!] Passwords do not match");
@@ -2471,9 +2490,13 @@ void editStaff(User user) {
             inputPassword(password2, MAX_PASSWORD_LEN);
 
             if (strcmp(password1, password2) == 0) {
-                strcpy(staff->password, password1);
-                setAcademicStaff(&start, &end);
-                printf("[#] Password changed");
+                if (validatePassword(password1)) {
+                    strcpy(staff->password, password1);
+                    setAcademicStaff(&start, &end);
+                    printf("[#] Password changed");
+                }
+                else
+                    printf("[!] This password is weak");
             }
             else {
                 printf("[!] Passwords do not match");
@@ -3891,6 +3914,28 @@ int validateName(char name[]) {
     }
 
     return 1;
+}
+
+int validatePassword(char password[]) {
+    // validate password by a score system based on password characters
+    int hasLower = 0, hasUpper = 0, hasNum = 0, hasPunct = 0;
+    int i;
+    int len = strlen(password);
+    for (i = 0; i < len; i++) {
+        char ch = password[i];
+        if (isalpha(ch) && islower(ch))
+            hasLower = 1;
+        else if (isalpha(ch) && isupper(ch))
+            hasUpper = 1;
+        else if (isdigit(ch))
+            hasNum = 1;
+        else if (ispunct(ch))
+            hasPunct = 1;
+    }
+
+    int score = hasLower + hasUpper + hasNum + hasPunct;
+    score += len;
+    return (score > 8);
 }
 
 void removeNewLine(char str[]) {
