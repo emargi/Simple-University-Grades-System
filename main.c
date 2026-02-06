@@ -134,6 +134,7 @@ int validatePassword(char password[]);
 
 void removeNewLine(char str[]);
 void extractDateInfo(char date[], int *year, int *month, int *day);
+void getTimeInfo(long long int time, int *year, int *month, int *day, int *hour, int *min, int *sec);
 
 void getDepartmentHeads(struct departmentHead **start, struct departmentHead **end);
 void setDepartmentHeads(struct departmentHead **start, struct departmentHead **end);
@@ -739,7 +740,7 @@ void studentAverageGrade(void) {
         float avg;
         avg = getAverageGradeByStudentNumber(startGra, endGra, currStu->studentNumber);
 
-        printf("[#] Student's average grade: %2.3f", avg);
+        printf("[#] Student's average grade: %6.3f", avg);
         freeGrades(startGra, endGra);
     }
     else
@@ -780,7 +781,7 @@ void lessonAverageGrade(void) {
         if (num != 0)
             avg /= num;
 
-        printf("[#] Lesson's average grade: %2.3f", avg);
+        printf("[#] Lesson's average grade: %6.3f", avg);
         freeGrades(start, end);
     }
     else
@@ -962,9 +963,9 @@ void listStudentGrades(void) {
         struct lesson *startLes, *currLes, *endLes;
         getLessons(&startLes, &endLes);
 
-        printf("+----+-------------+----------------------+--------+\n");
-        printf("| No | Lesson Code | Lesson name          | Grade  |\n");
-        printf("+----+-------------+----------------------+--------+\n");
+        printf("+----+-------------+----------------------+--------+------------------+\n");
+        printf("| No | Lesson Code | Lesson name          | Grade  | Set date         | \n");
+        printf("+----+-------------+----------------------+--------+------------------+\n");
 
         currGra = startGra;
         int num = 1;
@@ -977,8 +978,12 @@ void listStudentGrades(void) {
             currLes = getLessonByLessonCode(startLes, endLes, currGra->lessonCode);
             if (currLes != NULL) {
                 printf("| %-2d | %-11s ", num, currLes->code);
-                printf("| %-20s | %-2.3f |\n", currLes->name, currGra->grade);
-                printf("+----+-------------+----------------------+--------+\n");
+                printf("| %-20s | %06.3f ", currLes->name, currGra->grade);
+                int year, month, day, hour, min, sec;
+                getTimeInfo(currGra->time, &year, &month, &day, &hour, &min, &sec);
+                printf("| %04d/%02d/%02d ", year, month, day);
+                printf("%02d:%02d |\n", hour, min);
+                printf("+----+-------------+----------------------+--------+------------------+\n");
                 num++;
             }
 
@@ -1018,7 +1023,7 @@ void listFailingStudents(void) {
             num++;
             printf("| %-2d | %-10s ", num, currStu->studentNumber);
             printf("| %-20s | %-20s ", currStu->firstName, currStu->lastName);
-            printf("| %-2.3f     |\n", avg);
+            printf("| %-6.3f     |\n", avg);
             printf("+----+------------+----------------------+----------------------+-----------+\n");
         }
 
@@ -1062,7 +1067,7 @@ void listStudentsPassingLesson(void) {
                     num++;
                     printf("| %-2d | %-10s ", num, currStu->studentNumber);
                     printf("| %-20s | %-20s ", currStu->firstName, currStu->lastName);
-                    printf("| %-2.3f |\n", currGra->grade);
+                    printf("| %-6.3f |\n", currGra->grade);
                     printf("+----+------------+----------------------+----------------------+--------+\n");
                 }
             }
@@ -1111,7 +1116,7 @@ void listStudentsFailingLesson(void) {
                     num++;
                     printf("| %-2d | %-10s ", num, currStu->studentNumber);
                     printf("| %-20s | %-20s ", currStu->firstName, currStu->lastName);
-                    printf("| %-2.3f |\n", currGra->grade);
+                    printf("| %-6.3f |\n", currGra->grade);
                     printf("+----+------------+----------------------+----------------------+--------+\n");
                 }
             }
@@ -1270,7 +1275,7 @@ void listFailingStudentsStudiedLesson(void) {
                 num++;
                 printf("| %-2d | %-10s ", num, currStu->studentNumber);
                 printf("| %-20s | %-20s ", currStu->firstName, currStu->lastName);
-                printf("| %-2.3f | %-2.3f    |\n", currGra->grade, avg);
+                printf("| %-6.3f | %-6.3f    |\n", currGra->grade, avg);
                 printf("+----+------------+----------------------+--------------------+--------+-----------+\n");
             }
 
@@ -1328,7 +1333,7 @@ void listLessonGrades(void) {
             if (currStu != NULL) {
                 printf("| %-2d | %-10s ", num, currStu->studentNumber);
                 printf("| %-20s | %-20s ", currStu->firstName, currStu->lastName);
-                printf("| %-2.3f |\n", currGra->grade);
+                printf("| %-6.3f |\n", currGra->grade);
                 printf("+----+------------+----------------------+----------------------+--------+\n");
                 num++;
             }
@@ -1511,7 +1516,7 @@ void listStudentsSortedByAverageGrade(void) {
 
         printf("| %-2d | %-10s ", num, currStu->studentNumber);
         printf("| %-20s | %-20s ", currStu->firstName, currStu->lastName);
-        printf("| %-2.3f    |\n", avg);
+        printf("| %-6.3f    |\n", avg);
         printf("+----+------------+----------------------+----------------------+-----------+\n");
 
         currStu = currStu->next;
@@ -1591,7 +1596,7 @@ void listLessonGradesSortedByStudentName(void) {
             currStu = getStudentByStudentNumber(startStu, endStu, currGra->studentNumber);
             printf("| %-2d | %-10s ", num, currStu->studentNumber);
             printf("| %-20s | %-20s ", currStu->firstName, currStu->lastName);
-            printf("| %-2.3f |\n", currGra->grade);
+            printf("| %-6.3f |\n", currGra->grade);
             printf("+----+------------+----------------------+----------------------+--------+\n");
             currGra = currGra->next;
         }
@@ -3959,4 +3964,15 @@ void extractDateInfo(char date[], int *year, int *month, int *day) {
     *day = 0;
     for(; date[i] != '\0'; i++)
         *day = *day * 10 + (date[i] - '0');
+}
+
+void getTimeInfo(long long int time, int *year, int *month, int *day, int *hour, int *min, int *sec) {
+    struct tm *local;
+    local = localtime(&time);
+    *year = local->tm_year + 1900; // tm_year is counted from 1900
+    *month = local->tm_mon + 1; // tm_mon : 0 to 11
+    *day = local->tm_mday;
+    *hour = local->tm_hour;
+    *min = local->tm_min;
+    *sec = local->tm_sec;
 }
