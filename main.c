@@ -14,6 +14,7 @@
 #define MAX_USERNAME_LEN 16
 #define MAX_SIGNIN_TRIES 3
 #define MAX_SIGNIN_TRIES_PERIOD 15
+#define MAX_CAPTCHA_RAND_NUM 30
 
 #define PHONE_NUMBER_LEN 13
 #define NATIONAL_NUMBER_LEN 12
@@ -171,6 +172,8 @@ int checkLessonByLessonCode(char lessonCode[]);
 void sortStudentsByAverageGrade(struct student **startStu, struct student **endStu, struct grade *startGra, struct grade *endGra, int numStu);
 void sortGradesByStudentLastName(struct grade **startGra, struct grade **endGra, struct student *startStu, struct student *endStu, int numGra);
 
+void captcha(void);
+
 User loginPanel(void);
 User loginAdmin(void);
 User loginHead(void);
@@ -238,11 +241,33 @@ void deleteLesson(void);
 
 // main function
 void main() {
+    captcha();
+
     User user = loginPanel();
     mainMenu(user);
 }
 
 // function definitions
+void captcha(void) {
+    system("cls");
+    printf("[#] To use the program, you must solve the captcha:\n\n");
+
+    srand(time(NULL));
+    int num1, num2, answer;
+    do {
+        num1 = rand() % MAX_CAPTCHA_RAND_NUM + 1;
+        num2 = rand() % MAX_CAPTCHA_RAND_NUM + 1;
+    
+        printf("[#] %d + %d\n[?] Enter result: ", num1, num2);
+    
+        char strNum[10];
+        inputStringNumber(strNum, 10);
+        answer = atoi(strNum);
+        if (answer != num1 + num2)
+            printf("[!] Wrong answer. Try again\n\n");
+    } while (answer != num1 + num2);
+}
+
 User loginPanel(void) {
     system("cls");
 
