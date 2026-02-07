@@ -257,12 +257,15 @@ void captcha(void) {
     do {
         num1 = rand() % MAX_CAPTCHA_RAND_NUM + 1;
         num2 = rand() % MAX_CAPTCHA_RAND_NUM + 1;
-    
-        printf("[#] %d + %d\n[?] Enter result: ", num1, num2);
-    
+
+        printf("[#] %d + %d\n[?] Enter result (0 to exit): ", num1, num2);
+
         char strNum[10];
         inputStringNumber(strNum, 10);
         answer = atoi(strNum);
+        if (answer == 0)
+            exit(0);
+
         if (answer != num1 + num2)
             printf("[!] Wrong answer. Try again\n\n");
     } while (answer != num1 + num2);
