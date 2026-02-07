@@ -181,6 +181,8 @@ void adminMainMenu(User user);
 void headMainMenu(User user);
 void staffMainMenu(User user);
 
+void themeMenu(void);
+
 void adminLog(User user);
 void headLog(User user);
 void staffLog(User user);
@@ -288,6 +290,7 @@ User loginAdmin(void) {
         inputPassword(password, MAX_PASSWORD_LEN);
 
         if (strcmp(username, "admin") != 0 || strcmp(password, "admin") != 0) {
+            Beep(700, 500);
             printf("[!] Wrong information. Try again\n");
             strcpy(status, "failed");
             askAgain = 1;
@@ -338,6 +341,7 @@ User loginHead(void) {
             correct = 1;
         }
         else {
+            Beep(700, 500);
             strcpy(status, "failed");
             correct = 0;
         }
@@ -383,6 +387,7 @@ User loginStaff(void) {
             correct = 1;
         }
         else {
+            Beep(700, 500);
             strcpy(status, "failed");
             correct = 0;
         }
@@ -416,13 +421,16 @@ void adminMainMenu(User user) {
     printf("[#] The available actions are listed below:\n");
     printf("\n1. Add new department head\n2. Add new academic staff");
     printf("\n3. List users\n4. Delete user\n5. Log\n6. Create backup");
-    printf("\n7. Use backup\n\n0. Log out");
+    printf("\n7. Use backup\n\n9. Theme menu\n0. Log out");
     printf("\n\n[?] Enter your choice (enter number): ");
 
     int choice = inputDigit();
     printf("\n");
 
     if (choice == 0) {
+        // reset theme
+        system("color 07");
+
         user = loginPanel();
         mainMenu(user);
     }
@@ -448,6 +456,9 @@ void adminMainMenu(User user) {
     else if (choice == 7)
         useBackup();
 
+    else if (choice == 9)
+        themeMenu();
+
     mainMenu(user);
 }
 
@@ -456,12 +467,14 @@ void headMainMenu(User user) {
     printf("[#] The available actions are listed below:\n\n");
     printf("1. Add new lesson\n2. Add new grade\n3. Edit lesson");
     printf("\n4. Edit grade\n5. Delete lesson\n6. Log");
-    printf("\n7. Account settings\n\n0. Log out\n");
+    printf("\n7. Account settings\n\n9. Theme menu\n0. Log out\n");
 
     printf("\n[?] Enter your choice (enter number): ");
     int digit = inputDigit();
 
     if (digit == 0) {
+        system("color 07");
+
         user = loginPanel();
         mainMenu(user);
         exit(0);
@@ -488,6 +501,9 @@ void headMainMenu(User user) {
     else if (digit == 7)
         editHead(user);
 
+    else if (digit == 9)
+        themeMenu();
+
     headMainMenu(user);
 }
 
@@ -495,7 +511,7 @@ void staffMainMenu(User user) {
     system("cls");
     printf("[#] The available actions are listed below:\n");
     printf("\n1. Add student\n2. Edit student\n3. Add grade\n4. Log");
-    printf("\n5. Account settings\n\n0. Log out");
+    printf("\n5. Account settings\n\n9. Theme menu\n0. Log out");
     printf("\n\n[?] Enter your choice (enter number): ");
 
     int digit = inputDigit();
@@ -520,7 +536,33 @@ void staffMainMenu(User user) {
     else if (digit == 5)
         editStaff(user);
 
+    else if (digit == 9)
+        themeMenu();
+
     staffMainMenu(user);
+}
+
+void themeMenu(void) {
+    system("cls");
+
+    printf("[#] Welcome to theme menu. in here you can change how the program looks\n");
+    printf("[#] The available themes to apply, are listed below:\n");
+    printf("\n1. Dark theme\n2. Light theme\n3. Hacker theme\n\n0. Exit");
+    printf("\n\n[?] Enter your choice (enter number): ");
+
+    int choice = inputDigit();
+    if (choice == 1)
+        system("color 07"); // 0: black, 7: white
+
+    else if (choice == 2)
+        system("color 70");
+
+    else if (choice == 3)
+        system("color 0a");
+
+    // do not exit the function until user enters 0
+    if (choice != 0)
+        themeMenu();
 }
 
 void adminLog(User user) {
