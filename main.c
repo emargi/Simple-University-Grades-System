@@ -167,6 +167,7 @@ struct student *getStudentByStudentNumber(struct student *start, struct student 
 struct lesson *getLessonByLessonCode(struct lesson *start, struct lesson *end, char lessonCode[]);
 struct grade *getGradeByLessonCodeAndStudentNumber(struct grade *start, struct grade *end, char lessonCode[], char studentNumber[]);
 float getAverageGradeByStudentNumber(struct grade *start, struct grade *end, char studentNumber[]);
+int countSignInsInDay(struct signIn *start, struct signIn *end, int year, int month, int day);
 int checkLimitByUsername(char username[]);
 int checkUserByUsername(char username[]);
 int checkStudentByStudentNumber(char studentNumber[]);
@@ -1793,22 +1794,65 @@ void listSignIns(void) {
     struct signIn *start, *curr, *end;
     getSignIns(&start, &end);
 
-    printf("[#] List of all logins to the system is as below:\n");
-    printf("+--------+------------+------------------+---------------------+\n");
-    printf("| Number | Status     | Username         | Time                |\n");
-    printf("+--------+------------+------------------+---------------------+\n");
+    long long int currTime = time(NULL);
 
-    curr = start;
-    int num = 0;
-    while (curr != NULL) {
-        num++;
-        printf("| %-6d | %-10s | %-16s ", num, curr->status, curr->username);
+    printf("\n      ");
+    int i;
+    for (i = 5; i <= 80; i += 5)
+        printf("%6d", i);
+
+    printf("\n     +");
+    for (i = 1; i <= 80; i++) {
+        printf("-");
+        if (i % 5 == 0)
+            printf("|");
+    }
+
+    printf("\n");
+    char ch;
+    do {
+        printf("     |");
+        for (i = 1; i <= 80; i++) {
+            printf(" ");
+            if (i % 5 == 0)
+                printf("|");
+        }
+        printf("\n");
+
         int year, month, day, hour, min, sec;
-        getTimeInfo(curr->time, &year, &month, &day, &hour, &min, &sec);
-        printf("| %04d/%02d/%02d %02d:%02d:%02d |\n", year, month, day, hour, min, sec);
-        printf("+--------+------------+------------------+---------------------+\n");
+        getTimeInfo(currTime, &year, &month, &day, &hour, &min, &sec);
+        int count = countSignInsInDay(start, end, year, month, day);
+        printf("%02d/%02d|", month, day);
 
-        curr = curr->next;
+        for (i = 1; i <= 80; i++) {
+            if (count >= i)
+                printf("#");
+            else
+                printf(" ");
+
+            if (i % 5 == 0)
+                printf("|");
+        }
+        if (count > 80)
+            printf("+%d", count - 80);
+
+        printf("\n     |");
+        for (i = 1; i <= 80; i++) {
+            printf(" ");
+            if (i % 5 == 0)
+                printf("|");
+        }
+        printf("\n:");
+        ch = getch();
+        printf("\r"); // get back to the current line's first character
+        currTime -= 86400;
+    } while (ch != 'q');
+
+    printf("     +");
+    for (i = 1; i <= 80; i++) {
+        printf("-");
+        if (i % 5 == 0)
+            printf("+");
     }
 
     freeSignIns(start, end);
@@ -3668,6 +3712,22 @@ float getAverageGradeByStudentNumber(struct grade *start, struct grade *end, cha
         avg /= num;
 
     return avg;
+}
+
+int countSignInsInDay(struct signIn *start, struct signIn *end, int year, int month, int day) {
+    struct signIn *curr;
+    curr = start;
+    int count = 0;
+    while (curr != NULL) {
+        int year2, month2, day2, hour2, min2, sec2;
+        getTimeInfo(curr->time, &year2, &month2, &day2, &hour2, &min2, &sec2);
+        if (year == year2 && month == month2 && day == day2)
+            count++;
+
+        curr = curr->next;
+    }
+
+    return count;
 }
 
 int checkLimitByUsername(char username[]) {
