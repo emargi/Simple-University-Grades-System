@@ -334,7 +334,7 @@ User loginAdmin(void) {
         inputPassword(password, MAX_PASSWORD_LEN);
 
         if (strcmp(username, "admin") != 0 || strcmp(password, "admin") != 0) {
-            Beep(700, 500);
+            Beep(700, 400);
             printf("[!] Wrong information. Try again\n");
             strcpy(status, "failed");
             askAgain = 1;
@@ -387,7 +387,7 @@ User loginHead(void) {
             correct = 1;
         }
         else {
-            Beep(700, 500);
+            Beep(700, 400);
             strcpy(status, "failed");
             correct = 0;
         }
@@ -437,7 +437,7 @@ User loginStaff(void) {
             correct = 1;
         }
         else {
-            Beep(700, 500);
+            Beep(700, 400);
             strcpy(status, "failed");
             correct = 0;
         }
@@ -485,7 +485,7 @@ void resetPasswordMenu(void) {
             printf("[#] Your national number is now set to your password\n");
         }
         else {
-            Beep(700, 300);
+            Beep(700, 400);
             printf("[!] Wrong info. You can't reset your password");
         }
     }
@@ -507,7 +507,7 @@ void resetPasswordMenu(void) {
                 printf("[#] Your phone number is now set to your password");
             }
             else {
-                Beep(700, 350);
+                Beep(700, 400);
                 printf("[!] Wrong email. You can't reset your password");
             }
         }
@@ -666,7 +666,8 @@ void themeMenu(void) {
 
     printf("[#] Welcome to theme menu. in here you can change how the program looks\n");
     printf("[#] The available themes to apply, are listed below:\n");
-    printf("\n1. Dark theme\n2. Light theme\n3. Hacker theme\n\n0. Exit");
+    printf("\n1. Dark theme\n2. Light theme\n3. Hacker theme");
+    printf("\n4. aqua theme (dark)\n5. aqua theme (light)\n\n0. Exit");
     printf("\n\n[?] Enter your choice (enter number): ");
 
     int choice = inputDigit();
@@ -674,10 +675,16 @@ void themeMenu(void) {
         system("color 07"); // 0: black, 7: white
 
     else if (choice == 2)
-        system("color 70");
+        system("color f0");
 
     else if (choice == 3)
         system("color 0a");
+
+    else if (choice == 4)
+        system("color 0b");
+
+    else if (choice == 5)
+        system("color f3");
 
     // do not exit the function until user enters 0
     if (choice != 0)
