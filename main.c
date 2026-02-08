@@ -182,6 +182,8 @@ User loginAdmin(void);
 User loginHead(void);
 User loginStaff(void);
 
+void resetPasswordMenu(void);
+
 void mainMenu(User user);
 void adminMainMenu(User user);
 void headMainMenu(User user);
@@ -285,7 +287,8 @@ User loginPanel(void) {
     printf("[#] Welcome to Student Management System\n");
     printf("[#] To use this program, you should first login to your account\n");
     printf("[#] The available roles to login as are listed below\n");
-    printf("\n1. Admin\n2. Deparment Head\n3. Academic Staff\n\n0. Exit");
+    printf("\n1. Admin\n2. Deparment Head\n3. Academic Staff");
+    printf("\n\n9. Forgot password?\n0. Exit");
     printf("\n\n[?] Enter your choice (enter number): ");
 
     int choice = inputDigit();
@@ -302,6 +305,9 @@ User loginPanel(void) {
 
     if (choice == 3)
         return loginStaff();
+
+    if (choice == 9)
+        resetPasswordMenu();
 
     return loginPanel();
 }
@@ -451,6 +457,70 @@ User loginStaff(void) {
     return u;
 }
 
+void resetPasswordMenu(void) {
+    system("cls");
+
+    printf("[#] Welcome to reset password menu.\n");
+    printf("[#] You can reset your password by answering the questions below:\n\n");
+
+    char username[MAX_USERNAME_LEN];
+    printf("[?] Enter username: ");
+    inputUsername(username, MAX_USERNAME_LEN);
+
+    struct departmentHead *startHead, *currHead, *endHead;
+    getDepartmentHeads(&startHead, &endHead);
+    currHead = getHeadByUsername(startHead, endHead, username);
+    if (currHead != NULL) {
+        char phoneNumber[PHONE_NUMBER_LEN];
+        printf("[?] Enter your phone number: ");
+        inputStringNumber(phoneNumber, PHONE_NUMBER_LEN);
+        if (strcmp(phoneNumber, currHead->phoneNumber) == 0) {
+            char hashedPassword[HASHED_PASSWORD_LEN];
+            // save national number because hashPassword wipes it
+            char temp[NATIONAL_NUMBER_LEN];
+            strcpy(temp, currHead->nationalNumber);
+            hashPassword(hashedPassword, temp);
+            strcpy(currHead->hashedPassword, hashedPassword);
+            setDepartmentHeads(&startHead, &endHead);
+            printf("[#] Your national number is now set to your password\n");
+        }
+        else {
+            Beep(700, 300);
+            printf("[!] Wrong info. You can't reset your password");
+        }
+    }
+    else {
+        struct academicStaff *startStaff, *currStaff, *endStaff;
+        getAcademicStaff(&startStaff, &endStaff);
+        currStaff = getStaffByUsername(startStaff, endStaff, username);
+        if (currStaff != NULL) {
+            char email[MAX_EMAIL_LEN];
+            printf("[?] Enter your email: ");
+            inputString(email, MAX_EMAIL_LEN);
+            if (strcmp(currStaff->email, email) == 0) {
+                char hashedPassword[HASHED_PASSWORD_LEN];
+                char temp[PHONE_NUMBER_LEN];
+                strcpy(temp, currStaff->phoneNumber);
+                hashPassword(hashedPassword, temp);
+                strcpy(currStaff->hashedPassword, hashedPassword);
+                setAcademicStaff(&startStaff, &endStaff);
+                printf("[#] Your phone number is now set to your password");
+            }
+            else {
+                Beep(700, 350);
+                printf("[!] Wrong email. You can't reset your password");
+            }
+        }
+        else {
+            printf("[!] You can't reset this username's password");
+        }
+        freeAcademicStaff(startStaff, endStaff);
+    }
+    freeDepartmentHeads(startHead, endHead);
+
+    Sleep(1000);
+}
+
 void mainMenu(User user) {
     system("cls");
     if (strcmp(user.type, "admin") == 0)
@@ -562,6 +632,9 @@ void staffMainMenu(User user) {
 
     int digit = inputDigit();
     if (digit == 0) {
+        // reset theme
+        system("color 07");
+
         User user = loginPanel();
         mainMenu(user);
         exit(0);
