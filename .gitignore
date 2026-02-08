@@ -3,3 +3,5 @@
 *.o
 .vscode/*
 .vscode
+libsodium-win64
+libsodium-win64/*

@@ -5,6 +5,7 @@
 #include <conio.h>
 #include <windows.h>
 #include <time.h>
+#include <sodium.h>
 
 // constants
 // characters + '\n' (fgets BUG) + '\0'
@@ -26,6 +27,7 @@
 #define MAX_GRADE 20
 #define MIN_GRADE 0
 #define SIGNIN_LIMIT_TIME 300
+#define HASHED_PASSWORD_LEN crypto_pwhash_STRBYTES + 1
 
 #define HEAD_PROFILES_FILE "department_head_profiles.txt"
 #define STAFF_PROFILES_FILE "academic_staff_profiles.txt"
@@ -40,10 +42,7 @@ const char USERNAME_CHARS[] = "abcdefghijklmnopqrstuvwxyz1234567890_";
 // structures
 struct user {
     char type[6]; // admin, head, staff
-    char name[MAX_NAME_LEN]; // + '\0'
     char username[MAX_USERNAME_LEN];
-    char password[MAX_PASSWORD_LEN];
-    char email[MAX_EMAIL_LEN];
 };
 typedef struct user User;
 
@@ -51,7 +50,7 @@ struct departmentHead {
     char firstName[MAX_NAME_LEN];
     char lastName[MAX_NAME_LEN];
     char username[MAX_USERNAME_LEN];
-    char password[MAX_PASSWORD_LEN];
+    char hashedPassword[HASHED_PASSWORD_LEN];
     char groupName[MAX_NAME_LEN];
     char email[MAX_EMAIL_LEN];
     char phoneNumber[PHONE_NUMBER_LEN];
@@ -65,7 +64,7 @@ struct academicStaff {
     char firstName[MAX_NAME_LEN];
     char lastName[MAX_NAME_LEN];
     char username[MAX_USERNAME_LEN];
-    char password[MAX_PASSWORD_LEN];
+    char hashedPassword[HASHED_PASSWORD_LEN];
     char email[MAX_EMAIL_LEN];
     char phoneNumber[PHONE_NUMBER_LEN];
     char joinDate[DATE_LEN];
@@ -136,6 +135,10 @@ int validatePassword(char password[]);
 void removeNewLine(char str[]);
 void extractDateInfo(char date[], int *year, int *month, int *day);
 void getTimeInfo(long long int time, int *year, int *month, int *day, int *hour, int *min, int *sec);
+void hashPassword(char hashedPassword[], char password[]);
+int verifyPassword(char hashedPassword[], char password[]);
+void lockPasswordMem(char password[]);
+void unlockPasswordMem(char password[]);
 
 void getDepartmentHeads(struct departmentHead **start, struct departmentHead **end);
 void setDepartmentHeads(struct departmentHead **start, struct departmentHead **end);
@@ -241,8 +244,13 @@ void deleteLesson(void);
 
 // main function
 void main() {
-    captcha();
+    // libsodium initialization
+    if (sodium_init() < 0) {
+        printf("[!] An external library is not installed.");
+        exit(1);
+    }
 
+    captcha();
     User user = loginPanel();
     mainMenu(user);
 }
@@ -304,6 +312,8 @@ User loginAdmin(void) {
     char status[STATUS_LEN];
     int askAgain = 0;
 
+    lockPasswordMem(password);
+
     do {
         printf("[?] Enter your username: ");
         inputString(username, MAX_USERNAME_LEN);
@@ -331,12 +341,12 @@ User loginAdmin(void) {
         addNewSignIn(username, status);
     } while (askAgain);
 
+    unlockPasswordMem(password);
+    sodium_memzero(password, MAX_PASSWORD_LEN);
+
     User u;
     strcpy(u.type, "admin");
-    strcpy(u.name, "admin");
     strcpy(u.username, username);
-    strcpy(u.password, password);
-    strcpy(u.email, "admin@admin");
 
     return u;
 }
@@ -347,6 +357,7 @@ User loginHead(void) {
 
     char username[MAX_USERNAME_LEN];
     char password[MAX_PASSWORD_LEN];
+    char hashedPassword[HASHED_PASSWORD_LEN];
     char status[STATUS_LEN];
     int correct;
 
@@ -360,11 +371,12 @@ User loginHead(void) {
             continue;
         }
 
+        lockPasswordMem(password);
         printf("[?] Enter password: ");
         inputPassword(password, MAX_PASSWORD_LEN);
 
         user = getHeadByUsername(start, end, username);
-        if (user != NULL && strcmp(user->password, password) == 0) {
+        if (user != NULL && verifyPassword(user->hashedPassword, password)) {
             strcpy(status, "success");
             correct = 1;
         }
@@ -374,6 +386,8 @@ User loginHead(void) {
             correct = 0;
         }
 
+        sodium_memzero(password, MAX_PASSWORD_LEN);
+        unlockPasswordMem(password);
         addNewSignIn(username, status);
         if (!correct)
             printf("[!] Wrong information. Try again\n\n");
@@ -393,6 +407,7 @@ User loginStaff(void) {
 
     char username[MAX_USERNAME_LEN];
     char password[MAX_PASSWORD_LEN];
+    char hashedPassword[HASHED_PASSWORD_LEN];
     char status[STATUS_LEN];
     int correct;
 
@@ -406,11 +421,12 @@ User loginStaff(void) {
             continue;
         }
 
+        lockPasswordMem(password);
         printf("[?] Enter password: ");
         inputPassword(password, MAX_PASSWORD_LEN);
-
+        
         user = getStaffByUsername(start, end, username);
-        if (user != NULL && strcmp(user->password, password) == 0) {
+        if (user != NULL && verifyPassword(user->hashedPassword, password)) {
             strcpy(status, "success");
             correct = 1;
         }
@@ -420,6 +436,8 @@ User loginStaff(void) {
             correct = 0;
         }
 
+        sodium_memzero(password, MAX_PASSWORD_LEN);
+        unlockPasswordMem(password);
         addNewSignIn(username, status);
         if (!correct)
             printf("[!] Wrong information. Try again\n\n");
@@ -1898,6 +1916,9 @@ void addNewHead() {
 
         int same;
         char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
+        char hashedPassword[HASHED_PASSWORD_LEN];
+        lockPasswordMem(password1);
+        lockPasswordMem(password2);
         do {
             int strongPassword;
             do {
@@ -1919,7 +1940,11 @@ void addNewHead() {
                 same = 1;
             }
         } while (same == 0);
-        strcpy(curr->password, password1);
+        hashPassword(hashedPassword, password1);
+        sodium_memzero(password2, sizeof(password2));
+        strcpy(curr->hashedPassword, hashedPassword);
+        unlockPasswordMem(password1);
+        unlockPasswordMem(password2);
 
         strcpy(curr->status, "enabled");
 
@@ -2023,6 +2048,9 @@ void addNewStaff(void) {
         } while (usernameTaken);
 
         char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
+        char hashedPassword[HASHED_PASSWORD_LEN];
+        lockPasswordMem(password1);
+        lockPasswordMem(password2);
         do {
             int strongPassword;
             do {
@@ -2043,7 +2071,11 @@ void addNewStaff(void) {
                 correct = 1;
             }
         } while (!correct);
-        strcpy(curr->password, password1);
+        hashPassword(hashedPassword, password1);
+        sodium_memzero(password2, sizeof(password2));
+        strcpy(curr->hashedPassword, hashedPassword);
+        unlockPasswordMem(password1);
+        unlockPasswordMem(password2);
 
         strcpy(curr->status, "enabled");
 
@@ -2532,11 +2564,17 @@ void editHead(User user) {
         Sleep(1000);
     }
     else if (digit == 1) {
-        char old_password[MAX_PASSWORD_LEN];
+        char oldPassword[MAX_PASSWORD_LEN];
+        char newHashedPassword[HASHED_PASSWORD_LEN];
+        lockPasswordMem(oldPassword);
         printf("[?] Enter old password: ");
-        inputPassword(old_password, MAX_PASSWORD_LEN);
-        if (strcmp(head->password, old_password) == 0) {
+        inputPassword(oldPassword, MAX_PASSWORD_LEN);
+
+        if (verifyPassword(head->hashedPassword, oldPassword)) {
             char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
+            lockPasswordMem(password1);
+            lockPasswordMem(password2);
+
             printf("[?] Enter new password: ");
             inputPassword(password1, MAX_PASSWORD_LEN);
             printf("[?] Enter password again: ");
@@ -2544,7 +2582,10 @@ void editHead(User user) {
 
             if (strcmp(password1, password2) == 0) {
                 if (validatePassword(password1)) {
-                    strcpy(head->password, password1);
+                    hashPassword(newHashedPassword, password1);
+                    sodium_memzero(password2, sizeof(password2));
+
+                    strcpy(head->hashedPassword, newHashedPassword);
                     setDepartmentHeads(&start, &end);
                     printf("[#] Password changed");
                 }
@@ -2554,6 +2595,8 @@ void editHead(User user) {
             else {
                 printf("[!] Passwords do not match");
             }
+            unlockPasswordMem(password1);
+            unlockPasswordMem(password2);
         }
         else {
             printf("[!] Password wrong");
@@ -2617,11 +2660,15 @@ void editStaff(User user) {
         Sleep(1000);
     }
     else if (digit == 1) {
-        char old_password[MAX_PASSWORD_LEN];
+        char oldPassword[MAX_PASSWORD_LEN];
+        char newHashedPassword[HASHED_PASSWORD_LEN];
         printf("[?] Enter old password: ");
-        inputPassword(old_password, MAX_PASSWORD_LEN);
-        if (strcmp(staff->password, old_password) == 0) {
+        inputPassword(oldPassword, MAX_PASSWORD_LEN);
+        if (verifyPassword(staff->hashedPassword, oldPassword)) {
             char password1[MAX_PASSWORD_LEN], password2[MAX_PASSWORD_LEN];
+            lockPasswordMem(password1);
+            lockPasswordMem(password2);
+
             printf("[?] Enter new password: ");
             inputPassword(password1, MAX_PASSWORD_LEN);
             printf("[?] Enter password again: ");
@@ -2629,7 +2676,10 @@ void editStaff(User user) {
 
             if (strcmp(password1, password2) == 0) {
                 if (validatePassword(password1)) {
-                    strcpy(staff->password, password1);
+                    hashPassword(newHashedPassword, password1);
+                    sodium_memzero(password2, sizeof(password2));
+
+                    strcpy(staff->hashedPassword, newHashedPassword);
                     setAcademicStaff(&start, &end);
                     printf("[#] Password changed");
                 }
@@ -2639,6 +2689,8 @@ void editStaff(User user) {
             else {
                 printf("[!] Passwords do not match");
             }
+            unlockPasswordMem(password1);
+            unlockPasswordMem(password2);
         }
         else {
             printf("[!] Password wrong");
@@ -3001,8 +3053,8 @@ void getDepartmentHeads(struct departmentHead **start, struct departmentHead **e
         fgets(curr->username, MAX_USERNAME_LEN, fp);
         removeNewLine(curr->username);
 
-        fgets(curr->password, MAX_PASSWORD_LEN, fp);
-        removeNewLine(curr->password);
+        fgets(curr->hashedPassword, HASHED_PASSWORD_LEN, fp);
+        removeNewLine(curr->hashedPassword);
 
         fgets(curr->groupName, MAX_NAME_LEN, fp);
         removeNewLine(curr->groupName);
@@ -3050,7 +3102,7 @@ void setDepartmentHeads(struct departmentHead **start, struct departmentHead **e
         fprintf(fp, "%s\n", curr->firstName);
         fprintf(fp, "%s\n", curr->lastName);
         fprintf(fp, "%s\n", curr->username);
-        fprintf(fp, "%s\n", curr->password);
+        fprintf(fp, "%s\n", curr->hashedPassword);
         fprintf(fp, "%s\n", curr->groupName);
         fprintf(fp, "%s\n", curr->email);
         fprintf(fp, "%s\n", curr->phoneNumber);
@@ -3124,8 +3176,8 @@ void getAcademicStaff(struct academicStaff **start, struct academicStaff **end) 
         fgets(curr->username, MAX_USERNAME_LEN, fp);
         removeNewLine(curr->username);
 
-        fgets(curr->password, MAX_PASSWORD_LEN, fp);
-        removeNewLine(curr->password);
+        fgets(curr->hashedPassword, HASHED_PASSWORD_LEN, fp);
+        removeNewLine(curr->hashedPassword);
 
         fgets(curr->email, MAX_EMAIL_LEN, fp);
         removeNewLine(curr->email);
@@ -3172,7 +3224,7 @@ void setAcademicStaff(struct academicStaff **start, struct academicStaff **end) 
         fprintf(fp, "%s\n", curr->firstName);
         fprintf(fp, "%s\n", curr->lastName);
         fprintf(fp, "%s\n", curr->username);
-        fprintf(fp, "%s\n", curr->password);
+        fprintf(fp, "%s\n", curr->hashedPassword);
         fprintf(fp, "%s\n", curr->email);
         fprintf(fp, "%s\n", curr->phoneNumber);
         fprintf(fp, "%s\n", curr->joinDate);
@@ -4108,4 +4160,39 @@ void getTimeInfo(long long int time, int *year, int *month, int *day, int *hour,
     *hour = local->tm_hour;
     *min = local->tm_min;
     *sec = local->tm_sec;
+}
+
+void hashPassword(char hashedPassword[], char password[]) {
+    int error = 0;
+    if (crypto_pwhash_str(
+        hashedPassword, password, strlen(password),
+        crypto_pwhash_OPSLIMIT_INTERACTIVE,
+        crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0) {
+            printf("[Error] Out of memory!\n");
+            error = 1;
+    }
+
+    // wipe the data in memory to avoid leak from memory dumps
+    sodium_memzero(password, MAX_PASSWORD_LEN);
+
+    if (error)
+        exit(1);
+}
+
+int verifyPassword(char hashedPassword[], char password[]) {
+    // cmp = 0 if password is verified
+    int cmp = crypto_pwhash_str_verify(hashedPassword, password, strlen(password));
+    sodium_memzero(password, MAX_PASSWORD_LEN);
+
+    return (cmp == 0);
+}
+
+void lockPasswordMem(char password[]) {
+    // lock the memory to prevent from swapping to disk
+    sodium_mlock(password, MAX_PASSWORD_LEN);
+}
+
+void unlockPasswordMem(char password[]) {
+    // unlock the memory
+    sodium_munlock(password, MAX_PASSWORD_LEN);
 }
