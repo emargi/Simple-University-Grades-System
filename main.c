@@ -1731,7 +1731,7 @@ void listLessonGradesSortedByStudentName(void) {
         struct student *startStu, *currStu, *endStu;
         getStudents(&startStu, &endStu);
 
-        struct grade *firstGra, *lastGra;
+        struct grade *firstGra, *lastGra, *newGra;
 
         firstGra = NULL;
         lastGra = NULL;
@@ -1745,14 +1745,21 @@ void listLessonGradesSortedByStudentName(void) {
 
             currStu = getStudentByStudentNumber(startStu, endStu, currGra->studentNumber);
             if (currStu != NULL) {
+                newGra = malloc(sizeof(struct grade));
+                newGra->grade = currGra->grade;
+                newGra->time = currGra->time;
+                strcpy(newGra->lessonCode, currGra->lessonCode);
+                strcpy(newGra->studentNumber, currGra->studentNumber);
+                strcpy(newGra->username, currGra->username);
+                newGra->next = NULL;
                 num++;
                 if (firstGra == NULL) {
-                    firstGra = currGra;
+                    firstGra = newGra;
                     lastGra = firstGra;
                 }
                 else {
-                    lastGra->next = currGra;
-                    lastGra = currGra;
+                    lastGra->next = newGra;
+                    lastGra = newGra;
                 }
             }
 
@@ -1780,6 +1787,7 @@ void listLessonGradesSortedByStudentName(void) {
 
         freeStudents(startStu, endStu);
         freeGrades(startGra, endGra);
+        freeGrades(firstGra, lastGra);
     }
 
     else
